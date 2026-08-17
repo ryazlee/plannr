@@ -12,8 +12,8 @@ const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const LIGHT_ATTR = '&copy; OpenStreetMap'
 const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const ROUTE_STYLE = {
-  light: { line: '#111827', halo: '#ffffff' },
-  dark: { line: '#f3f4f6', halo: '#111827' },
+  light: { line: '#7b8fa3', glow: '#7b8fa3' },
+  dark: { line: '#8fa3b6', glow: '#8fa3b6' },
 } as const
 
 type MapPoint = [number, number]
@@ -37,6 +37,40 @@ function isSamePoint(from: MapPoint, to: MapPoint): boolean {
   const dLat = to[0] - from[0]
   const dLng = to[1] - from[1]
   return dLat * dLat + dLng * dLng < 1e-12
+}
+
+function bezierPoint(start: MapPoint, control: MapPoint, end: MapPoint, t: number): MapPoint {
+  const inverse = 1 - t
+  return [
+    inverse * inverse * start[0] + 2 * inverse * t * control[0] + t * t * end[0],
+    inverse * inverse * start[1] + 2 * inverse * t * control[1] + t * t * end[1],
+  ]
+}
+
+function curveControl(from: MapPoint, to: MapPoint, sign: 1 | -1): MapPoint {
+  const latScale = Math.max(Math.cos(((from[0] + to[0]) / 2) * (Math.PI / 180)), 0.2)
+  const north = to[0] - from[0]
+  const east = (to[1] - from[1]) * latScale
+  const dist = Math.hypot(east, north)
+  if (dist < 1e-8) {
+    return interpolate(from, to, 0.5)
+  }
+
+  const bulge = dist * 0.2
+  return [
+    (from[0] + to[0]) / 2 + (east / dist) * bulge * sign,
+    (from[1] + to[1]) / 2 + (-north / dist) * bulge * sign / latScale,
+  ]
+}
+
+function curvePoints(from: MapPoint, control: MapPoint, to: MapPoint): MapPoint[] {
+  const dist = Math.hypot(to[0] - from[0], to[1] - from[1])
+  const steps = Math.max(10, Math.min(28, Math.round(dist * 1400)))
+  const points: MapPoint[] = []
+  for (let i = 0; i <= steps; i += 1) {
+    points.push(bezierPoint(from, control, to, i / steps))
+  }
+  return points
 }
 
 type ItineraryMapProps = {
@@ -77,38 +111,45 @@ function markerIcon(index: number, pending = false, focused = false) {
 function arrowIcon(bearing: number) {
   return divIcon({
     className: 'route-arrow-wrap',
-    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.2 21.2 20.8 12 16.2 2.8 20.8Z"/></svg></div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
+    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 9 17 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   })
 }
 
 function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light' | 'dark' }) {
   const colors = ROUTE_STYLE[theme]
-  const arrows = useMemo(() => {
-    const next: { position: MapPoint; bearing: number }[] = []
+  const route = useMemo(() => {
+    const line: MapPoint[] = []
+    const arrows: { position: MapPoint; bearing: number }[] = []
+
     for (let i = 0; i < positions.length - 1; i += 1) {
       const from = positions[i]
       const to = positions[i + 1]
       if (isSamePoint(from, to)) {
         continue
       }
-      const bearing = segmentBearing(from, to)
-      const dLat = to[0] - from[0]
-      const dLng = to[1] - from[1]
-      const longHop = dLat * dLat + dLng * dLng > 0.0002
-      if (longHop) {
-        next.push({
-          position: interpolate(from, to, 0.34),
-          bearing,
+
+      const control = curveControl(from, to, i % 2 === 0 ? 1 : -1)
+      const curved = curvePoints(from, control, to)
+      if (line.length > 0) {
+        curved.shift()
+      }
+      line.push(...curved)
+
+      const dist2 = (to[0] - from[0]) ** 2 + (to[1] - from[1]) ** 2
+      const stops = dist2 > 0.0002 ? [0.38, 0.72] : [0.58]
+      for (const t of stops) {
+        const before = bezierPoint(from, control, to, Math.max(0, t - 0.04))
+        const after = bezierPoint(from, control, to, Math.min(1, t + 0.04))
+        arrows.push({
+          position: bezierPoint(from, control, to, t),
+          bearing: segmentBearing(before, after),
         })
       }
-      next.push({
-        position: interpolate(from, to, longHop ? 0.72 : 0.62),
-        bearing,
-      })
     }
-    return next
+
+    return { line, arrows }
   }, [positions])
 
   const lineOptions = {
@@ -116,29 +157,33 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
     lineJoin: 'round' as const,
   }
 
+  if (route.line.length < 2) {
+    return null
+  }
+
   return (
     <>
       <Polyline
-        positions={positions}
+        positions={route.line}
         interactive={false}
         pathOptions={{
           ...lineOptions,
-          color: colors.halo,
-          weight: 10,
-          opacity: 0.9,
+          color: colors.glow,
+          weight: 8,
+          opacity: 0.18,
         }}
       />
       <Polyline
-        positions={positions}
+        positions={route.line}
         interactive={false}
         pathOptions={{
           ...lineOptions,
           color: colors.line,
-          weight: 4,
-          opacity: 0.95,
+          weight: 3,
+          opacity: 0.7,
         }}
       />
-      {arrows.map((arrow) => (
+      {route.arrows.map((arrow) => (
         <Marker
           key={`${arrow.position[0]},${arrow.position[1]},${arrow.bearing}`}
           position={arrow.position}
