@@ -1,4 +1,5 @@
 import { MapPin } from 'lucide-react'
+import PeopleChips from './PeopleChips'
 import Button from './Button'
 import EventMiniMap from './EventMiniMap'
 import SectionCard from './SectionCard'
@@ -11,6 +12,8 @@ type AddEventPanelProps = {
   title: string
   notes: string
   link: string
+  people: string[]
+  assigned: string[]
   pendingLocation: LatLng | null
   showMap: boolean
   nextIndex: number
@@ -19,6 +22,8 @@ type AddEventPanelProps = {
   onTitleChange: (value: string) => void
   onNotesChange: (value: string) => void
   onLinkChange: (value: string) => void
+  onTogglePerson: (name: string) => void
+  onToggleEveryone: () => void
   onAddEvent: () => void
   onPrepareNew?: () => void
   onPlacePin: (lat: number, lng: number) => void
@@ -30,6 +35,8 @@ export default function AddEventPanel({
   title,
   notes,
   link,
+  people,
+  assigned,
   pendingLocation,
   showMap,
   nextIndex,
@@ -38,6 +45,8 @@ export default function AddEventPanel({
   onTitleChange,
   onNotesChange,
   onLinkChange,
+  onTogglePerson,
+  onToggleEveryone,
   onAddEvent,
   onPrepareNew,
   onPlacePin,
@@ -93,6 +102,13 @@ export default function AddEventPanel({
               placeholder="opentable.com/… (optional)"
             />
           </label>
+
+          <PeopleChips
+            people={people}
+            assigned={assigned}
+            onTogglePerson={onTogglePerson}
+            onToggleEveryone={onToggleEveryone}
+          />
 
           {showMap ? (
             <EventMiniMap

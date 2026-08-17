@@ -2,6 +2,7 @@ import { Trash2 } from 'lucide-react'
 import EventMiniMap from './EventMiniMap'
 import MapSearch from './MapSearch'
 import MapsLink from './MapsLink'
+import PeopleChips from './PeopleChips'
 import SectionCard from './SectionCard'
 import TimeFields from './TimeFields'
 import type { Event } from '../types'
@@ -54,8 +55,6 @@ export default function TimelinePanel({
             {events.map((event, index) => {
               const selected = event.id === focusedEventId
               const located = hasLocation(event)
-              const allAssigned =
-                people.length > 0 && people.every((person) => event.people.includes(person))
               const showMiniMap = showMaps && located
 
               return (
@@ -123,34 +122,12 @@ export default function TimelinePanel({
                         placeholder="Link (optional)"
                         aria-label={`Event ${index + 1} link`}
                       />
-                      {people.length > 0 ? (
-                        <div className="chip-row" onClick={(click) => click.stopPropagation()}>
-                          <button
-                            type="button"
-                            className={['chip', allAssigned ? 'chip--active' : null]
-                              .filter(Boolean)
-                              .join(' ')}
-                            onClick={() => onToggleEveryone(event.id)}
-                          >
-                            Everyone
-                          </button>
-                          {people.map((person) => {
-                            const assigned = event.people.includes(person)
-                            return (
-                              <button
-                                key={person}
-                                type="button"
-                                className={['chip', assigned ? 'chip--active' : null]
-                                  .filter(Boolean)
-                                  .join(' ')}
-                                onClick={() => onTogglePerson(event.id, person)}
-                              >
-                                {person}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      ) : null}
+                      <PeopleChips
+                        people={people}
+                        assigned={event.people}
+                        onTogglePerson={(name) => onTogglePerson(event.id, name)}
+                        onToggleEveryone={() => onToggleEveryone(event.id)}
+                      />
                       {showMiniMap ? (
                         <EventMiniMap
                           events={[event]}

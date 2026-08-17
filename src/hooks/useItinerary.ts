@@ -16,6 +16,7 @@ export function useItinerary() {
   const [draftTitle, setDraftTitle] = useState('')
   const [draftNotes, setDraftNotes] = useState('')
   const [draftLink, setDraftLink] = useState('')
+  const [draftPeople, setDraftPeople] = useState<string[]>([...itinerary.people])
   const [personDraft, setPersonDraft] = useState('')
   const [pendingLocation, setPendingLocation] = useState<LatLng | null>(null)
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null)
@@ -72,10 +73,19 @@ export function useItinerary() {
       return
     }
 
+    const wasEveryone =
+      itinerary.people.length === 0
+      || itinerary.people.every((person) => draftPeople.includes(person))
+
     updateState((current) => ({
       ...current,
       people: [...current.people, nextName],
     }))
+    if (wasEveryone) {
+      setDraftPeople((current) =>
+        current.includes(nextName) ? current : [...current, nextName],
+      )
+    }
     setPersonDraft('')
     setNotice('')
   }
@@ -89,6 +99,7 @@ export function useItinerary() {
         people: event.people.filter((person) => person !== name),
       })),
     }))
+    setDraftPeople((current) => current.filter((person) => person !== name))
   }
 
   function moveEventPin(eventId: string, lat: number, lng: number) {
@@ -111,29 +122,14 @@ export function useItinerary() {
       return
     }
 
-    const title = draftTitle.trim()
-
-    if (!title) {
-      setPendingLocation(location)
-      setNotice('Add a title, then click Add event — or type a title and click the map again.')
-      return
-    }
-
-    addEventAt(location, title, draftStartTime, draftEndTime, draftNotes, draftLink)
+    setPendingLocation(location)
+    setNotice('Pin ready — click Add event to create it.')
   }
 
   function placeNewPin(lat: number, lng: number) {
-    const location = { lat: roundCoord(lat), lng: roundCoord(lng) }
     setFocusedEventId(null)
-    const title = draftTitle.trim()
-
-    if (!title) {
-      setPendingLocation(location)
-      setNotice('Add a title, then click Add event — or type a title and tap the map again.')
-      return
-    }
-
-    addEventAt(location, title, draftStartTime, draftEndTime, draftNotes, draftLink)
+    setPendingLocation({ lat: roundCoord(lat), lng: roundCoord(lng) })
+    setNotice('Pin ready — click Add event to create it.')
   }
 
   function addEventAt(
@@ -152,7 +148,7 @@ export function useItinerary() {
         title,
         notes: notes.trim(),
         link: link.trim(),
-        people: [...current.people],
+        people: [...draftPeople],
         lat: location?.lat ?? null,
         lng: location?.lng ?? null,
       }
@@ -165,9 +161,27 @@ export function useItinerary() {
     setDraftTitle('')
     setDraftNotes('')
     setDraftLink('')
+    setDraftPeople([...itinerary.people])
     setPendingLocation(null)
     setFocusedEventId(null)
     setNotice('')
+  }
+
+  function toggleDraftPerson(name: string) {
+    setDraftPeople((current) =>
+      current.includes(name)
+        ? current.filter((person) => person !== name)
+        : [...current, name],
+    )
+  }
+
+  function toggleDraftEveryone() {
+    setDraftPeople((current) => {
+      const allAssigned =
+        itinerary.people.length > 0
+        && itinerary.people.every((person) => current.includes(person))
+      return allAssigned ? [] : [...itinerary.people]
+    })
   }
 
   function addEvent() {
@@ -260,6 +274,7 @@ export function useItinerary() {
     setDraftTitle('')
     setDraftNotes('')
     setDraftLink('')
+    setDraftPeople([])
     setPersonDraft('')
     setPendingLocation(null)
     setFocusedEventId(null)
@@ -273,6 +288,7 @@ export function useItinerary() {
     draftTitle,
     draftNotes,
     draftLink,
+    draftPeople,
     personDraft,
     pendingLocation,
     focusedEventId,
@@ -293,6 +309,8 @@ export function useItinerary() {
     placeNewPin,
     moveEventPin,
     addEvent,
+    toggleDraftPerson,
+    toggleDraftEveryone,
     updateEvent,
     toggleEventPerson,
     toggleEventEveryone,

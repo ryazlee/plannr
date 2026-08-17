@@ -22,6 +22,7 @@ export default function PlannerScreen() {
     draftTitle,
     draftNotes,
     draftLink,
+    draftPeople,
     personDraft,
     pendingLocation,
     focusedEventId,
@@ -41,6 +42,8 @@ export default function PlannerScreen() {
     placeNewPin,
     moveEventPin,
     addEvent,
+    toggleDraftPerson,
+    toggleDraftEveryone,
     updateEvent,
     toggleEventPerson,
     toggleEventEveryone,
@@ -117,6 +120,8 @@ export default function PlannerScreen() {
                   title={draftTitle}
                   notes={draftNotes}
                   link={draftLink}
+                  people={itinerary.people}
+                  assigned={draftPeople}
                   pendingLocation={pendingLocation}
                   showMap={!isDesktop}
                   nextIndex={itinerary.events.length + 1}
@@ -125,6 +130,8 @@ export default function PlannerScreen() {
                   onTitleChange={setDraftTitle}
                   onNotesChange={setDraftNotes}
                   onLinkChange={setDraftLink}
+                  onTogglePerson={toggleDraftPerson}
+                  onToggleEveryone={toggleDraftEveryone}
                   onAddEvent={addEvent}
                   onPrepareNew={() => setFocusedEventId(null)}
                   onPlacePin={placeNewPin}
