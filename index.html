@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fafafa" />
+    <meta name="description" content="Plan a day out and share the itinerary with a link. No account required." />
+    <meta property="og:title" content="Plannr" />
+    <meta property="og:description" content="Plan a day out and share the itinerary with a link. No account required." />
+    <meta property="og:url" content="https://ryazlee.github.io/plannr/" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Plannr" />
+    <meta name="twitter:description" content="Plan a day out and share the itinerary with a link. No account required." />
+    <title>Plannr</title>
+    <script>
+      try {
+        var saved = localStorage.getItem('plannr-theme')
+        var dark =
+          saved === 'dark' ||
+          (saved !== 'light' &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) {
+          document.documentElement.classList.add('theme-dark')
+          document
+            .querySelector('meta[name="theme-color"]')
+            ?.setAttribute('content', '#111827')
+        }
+      } catch (e) {}
+    </script>
+    <script>
+      window.goatcounter = { no_onload: true }
+    </script>
+    <script
+      data-goatcounter="https://ryab.goatcounter.com/count"
+      async
+      src="https://gc.zgo.at/count.js"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
