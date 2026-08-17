@@ -7,7 +7,7 @@ import {
   roundCoord,
   withSortedEvents,
 } from '../utils/itinerary'
-import { createPreviewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
+import { clearStoredState, createPreviewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
 
 export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryState>(() => hydrateState())
@@ -251,6 +251,7 @@ export function useItinerary() {
 
   function clearPlan() {
     const start = currentTimeInput()
+    clearStoredState()
     startTransition(() => {
       setItinerary(createEmptyState())
     })

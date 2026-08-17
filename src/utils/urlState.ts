@@ -4,6 +4,7 @@ import { createEmptyState, isEmptyState, parseItineraryState, serializeItinerary
 
 const PLAN_PARAM = 'plan'
 const LZ_PREFIX = 's:'
+const PLAN_STORAGE_KEY = 'plannr-plan'
 
 function getAppRootPath(): string {
   const base = import.meta.env.BASE_URL
@@ -63,7 +64,49 @@ export function readUrlState(): ItineraryState | null {
   return decodePayload(params.get(PLAN_PARAM) ?? '')
 }
 
+function hasUrlPlanPayload(): boolean {
+  const rawHash = readRawHash()
+  if (rawHash.startsWith(LZ_PREFIX) || rawHash.startsWith(`${PLAN_PARAM}=`)) {
+    return true
+  }
+
+  return new URLSearchParams(window.location.search).has(PLAN_PARAM)
+}
+
+function readStoredState(): ItineraryState | null {
+  try {
+    const raw = localStorage.getItem(PLAN_STORAGE_KEY)
+    if (!raw) {
+      return null
+    }
+
+    return parseItineraryState(JSON.parse(raw) as unknown)
+  } catch {
+    return null
+  }
+}
+
+function writeStoredState(state: ItineraryState): void {
+  try {
+    localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(serializeItineraryState(state)))
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
+export function clearStoredState(): void {
+  try {
+    localStorage.removeItem(PLAN_STORAGE_KEY)
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 export function writeUrlState(state: ItineraryState): void {
+  if (!isEmptyState(state)) {
+    writeStoredState(state)
+  }
+
   const encoded = encodeUrlState(state)
   const url = new URL(window.location.href)
   url.searchParams.delete(PLAN_PARAM)
@@ -79,9 +122,25 @@ export function writeUrlState(state: ItineraryState): void {
 }
 
 export function hydrateState(): ItineraryState {
-  const state = readUrlState() ?? createEmptyState()
-  writeUrlState(state)
-  return state
+  const fromUrl = readUrlState()
+  if (fromUrl) {
+    writeUrlState(fromUrl)
+    return fromUrl
+  }
+
+  if (hasUrlPlanPayload()) {
+    writeUrlState(createEmptyState())
+    return createEmptyState()
+  }
+
+  const fromStorage = readStoredState()
+  if (fromStorage && !isEmptyState(fromStorage)) {
+    writeUrlState(fromStorage)
+    return fromStorage
+  }
+
+  writeUrlState(createEmptyState())
+  return createEmptyState()
 }
 
 export function createPreviewLocation(state: ItineraryState): {
