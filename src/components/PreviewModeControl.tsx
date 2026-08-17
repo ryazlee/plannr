@@ -110,7 +110,7 @@ export default function PreviewModeControl({
           className="preview-menu__panel"
           id={menuId}
           role="menu"
-          aria-label="Preview options"
+          aria-label="View options"
           style={{ top: coords.top, left: coords.left }}
         >
           {modes.map((option) => {
@@ -175,7 +175,7 @@ export default function PreviewModeControl({
         ref={triggerRef}
         type="button"
         className="preview-menu__trigger"
-        aria-label="Preview options"
+        aria-label="View options"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}

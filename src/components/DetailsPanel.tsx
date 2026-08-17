@@ -8,7 +8,7 @@ type DetailsPanelProps = {
   date: string
   notice: string
   eventCount: number
-  previewLocation: To
+  viewLocation: To
   onTitleChange: (value: string) => void
   onDateChange: (value: string) => void
   onCopyShareLink: () => void
@@ -20,7 +20,7 @@ export default function DetailsPanel({
   date,
   notice,
   eventCount,
-  previewLocation,
+  viewLocation,
   onTitleChange,
   onDateChange,
   onCopyShareLink,
@@ -58,10 +58,10 @@ export default function DetailsPanel({
               onClick={onCopyShareLink}
             />
             <Button
-              label="Preview"
+              label="View"
               icon={<Eye size={16} />}
               variant="ghost"
-              to={previewLocation}
+              to={viewLocation}
             />
           </div>
 

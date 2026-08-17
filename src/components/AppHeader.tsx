@@ -13,7 +13,7 @@ export default function AppHeader({
   mode,
   quiet = false,
 }: AppHeaderProps) {
-  const showMode = Boolean(mode) && !quiet
+  const showMode = Boolean(mode)
   const showSubtitle = Boolean(subtitle) && !quiet
 
   return (
@@ -23,7 +23,7 @@ export default function AppHeader({
           <div className="brand-row">
             <h1 className="brand">{title}</h1>
             {showMode ? (
-              <span className={`mode-tag mode-tag--${mode}`}>{mode === 'editing' ? 'Editing' : 'Viewing'}</span>
+              <span className={`mode-tag mode-tag--${mode}`}>{mode === 'editing' ? 'Edit' : 'View'}</span>
             ) : null}
           </div>
           {showSubtitle ? <p className="subtitle">{subtitle}</p> : null}

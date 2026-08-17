@@ -7,7 +7,7 @@ import {
   roundCoord,
   withSortedEvents,
 } from '../utils/itinerary'
-import { clearStoredState, createPreviewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
+import { clearStoredState, createViewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
 
 export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryState>(() => hydrateState())
@@ -256,7 +256,7 @@ export function useItinerary() {
 
   async function copyShareLink() {
     try {
-      await navigator.clipboard.writeText(createPreviewUrl(itinerary))
+      await navigator.clipboard.writeText(createViewUrl(itinerary))
       setNotice('Share link copied to clipboard.')
     } catch {
       setNotice('Clipboard access failed. Copy the URL from the address bar instead.')

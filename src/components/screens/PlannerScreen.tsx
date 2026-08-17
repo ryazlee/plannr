@@ -12,7 +12,7 @@ import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { useItinerary } from '../../hooks/useItinerary'
 import { formatDisplayDate } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { createPreviewLocation } from '../../utils/urlState'
+import { createViewLocation } from '../../utils/urlState'
 import type { LatLng } from '../../types'
 
 export default function PlannerScreen() {
@@ -61,7 +61,7 @@ export default function PlannerScreen() {
 
   return (
     <div className="app-shell">
-      <AppHeader title="Plannr" quiet />
+      <AppHeader title="Plannr" mode="editing" quiet />
       <main className="app-main">
         <div className="shell-inner">
           <SplitLayout
@@ -99,7 +99,7 @@ export default function PlannerScreen() {
                   date={itinerary.date}
                   notice={notice}
                   eventCount={itinerary.events.length}
-                  previewLocation={createPreviewLocation(itinerary)}
+                  viewLocation={createViewLocation(itinerary)}
                   onTitleChange={updateTitle}
                   onDateChange={updateDate}
                   onCopyShareLink={copyShareLink}

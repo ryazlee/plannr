@@ -25,9 +25,10 @@
     <script>
       try {
         var parts = location.pathname.split('/').filter(Boolean)
-        var previewAt = parts.indexOf('preview')
-        if (previewAt >= 0 && previewAt < parts.length - 2) {
-          var slug = parts[previewAt + 1]
+        var viewAt = parts.indexOf('view')
+        if (viewAt < 0) viewAt = parts.indexOf('preview')
+        if (viewAt >= 0 && viewAt < parts.length - 2) {
+          var slug = parts[viewAt + 1]
           if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length <= 48) {
             var title = slug.replace(/-/g, ' ')
             title = title.charAt(0).toUpperCase() + title.slice(1)

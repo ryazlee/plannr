@@ -61,6 +61,39 @@ export function withSortedEvents(state: ItineraryState): ItineraryState {
   }
 }
 
+export function groupEventsByStartTime(events: Event[]): Event[][] {
+  const groups: Event[][] = []
+
+  for (const event of events) {
+    const current = groups[groups.length - 1]
+    const lead = current?.[0]
+    if (current && lead && event.startTime && lead.startTime === event.startTime) {
+      current.push(event)
+      continue
+    }
+    groups.push([event])
+  }
+
+  return groups
+}
+
+export function latestEffectiveEnd(events: Event[]): string {
+  let latest = ''
+  let latestMinutes = Number.NEGATIVE_INFINITY
+
+  for (const event of events) {
+    const end = effectiveEndTime(event)
+    const minutes = timeToMinutes(end)
+    if (minutes == null || minutes < latestMinutes) {
+      continue
+    }
+    latest = end
+    latestMinutes = minutes
+  }
+
+  return latest
+}
+
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }

@@ -28,9 +28,14 @@ function getRelativePathname(pathname: string): string {
   return pathname
 }
 
-function isPreviewPath(pathname: string): boolean {
+function isViewPath(pathname: string): boolean {
   const relative = getRelativePathname(pathname)
-  return relative === '/preview' || relative.startsWith('/preview/')
+  return (
+    relative === '/view' ||
+    relative.startsWith('/view/') ||
+    relative === '/preview' ||
+    relative.startsWith('/preview/')
+  )
 }
 
 function readRawHash(): string {
@@ -192,27 +197,31 @@ function extractPayload(raw: string): string {
 
 function readPathPayload(): string {
   const relative = getRelativePathname(window.location.pathname)
-  if (!relative.startsWith('/preview/')) {
-    return ''
+  for (const prefix of ['/view/', '/preview/']) {
+    if (!relative.startsWith(prefix)) {
+      continue
+    }
+
+    const rest = relative.slice(prefix.length).replace(/\/+$/, '')
+    const segments = rest.split('/').filter(Boolean)
+    return segments.at(-1) ?? ''
   }
 
-  const rest = relative.slice('/preview/'.length).replace(/\/+$/, '')
-  const segments = rest.split('/').filter(Boolean)
-  return segments.at(-1) ?? ''
+  return ''
 }
 
-function previewRelativePath(state: ItineraryState): string {
+function viewRelativePath(state: ItineraryState): string {
   const payload = hyphenatePayload(encodeUrlState(state))
   if (!payload) {
-    return '/preview'
+    return '/view'
   }
 
   const slug = slugify(state.title)
-  return slug ? `/preview/${slug}/${payload}` : `/preview/${payload}`
+  return slug ? `/view/${slug}/${payload}` : `/view/${payload}`
 }
 
-function previewPathname(state: ItineraryState): string {
-  return `${getAppRootPath()}${previewRelativePath(state)}`
+function viewPathname(state: ItineraryState): string {
+  return `${getAppRootPath()}${viewRelativePath(state)}`
 }
 
 export function encodeUrlState(state: ItineraryState): string {
@@ -288,8 +297,8 @@ export function writeUrlState(state: ItineraryState): void {
   const url = new URL(window.location.href)
   url.searchParams.delete(PLAN_PARAM)
 
-  if (isPreviewPath(url.pathname)) {
-    url.pathname = previewPathname(state)
+  if (isViewPath(url.pathname)) {
+    url.pathname = viewPathname(state)
     url.hash = ''
   } else {
     url.hash = hyphenatePayload(encodeUrlState(state))
@@ -326,11 +335,11 @@ export function hydrateState(): ItineraryState {
   return createEmptyState()
 }
 
-export function createPreviewLocation(state: ItineraryState): {
+export function createViewLocation(state: ItineraryState): {
   pathname: string
 } {
   return {
-    pathname: previewRelativePath(state),
+    pathname: viewRelativePath(state),
   }
 }
 
@@ -345,6 +354,6 @@ export function createEditorLocation(state: ItineraryState): {
   }
 }
 
-export function createPreviewUrl(state: ItineraryState): string {
-  return `${window.location.origin}${previewPathname(state)}`
+export function createViewUrl(state: ItineraryState): string {
+  return `${window.location.origin}${viewPathname(state)}`
 }

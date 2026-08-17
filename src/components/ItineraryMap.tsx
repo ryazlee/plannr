@@ -12,8 +12,8 @@ const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const LIGHT_ATTR = '&copy; OpenStreetMap'
 const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const ROUTE_STYLE = {
-  light: { line: '#7b8fa3', glow: '#7b8fa3' },
-  dark: { line: '#8fa3b6', glow: '#8fa3b6' },
+  light: { line: '#2563eb', glow: '#2563eb' },
+  dark: { line: '#60a5fa', glow: '#60a5fa' },
 } as const
 
 type MapPoint = [number, number]
@@ -170,7 +170,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
           ...lineOptions,
           color: colors.glow,
           weight: 8,
-          opacity: 0.18,
+          opacity: 0.22,
         }}
       />
       <Polyline
@@ -179,8 +179,8 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         pathOptions={{
           ...lineOptions,
           color: colors.line,
-          weight: 3,
-          opacity: 0.7,
+          weight: 3.25,
+          opacity: 0.88,
         }}
       />
       {route.arrows.map((arrow) => (

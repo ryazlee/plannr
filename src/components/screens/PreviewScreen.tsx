@@ -11,7 +11,7 @@ import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
 import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { createEditorLocation, createPreviewUrl, hydrateState } from '../../utils/urlState'
+import { createEditorLocation, createViewUrl, hydrateState } from '../../utils/urlState'
 import { hasCalendarDate } from '../../utils/calendar'
 
 export default function PreviewScreen() {
@@ -48,7 +48,7 @@ export default function PreviewScreen() {
 
   async function copyShareLink() {
     try {
-      await navigator.clipboard.writeText(createPreviewUrl(itinerary))
+      await navigator.clipboard.writeText(createViewUrl(itinerary))
       setNotice('Share link copied to clipboard.')
     } catch {
       setNotice('Clipboard access failed. Copy the URL from the address bar instead.')
@@ -142,7 +142,7 @@ export default function PreviewScreen() {
 
   return (
     <div className={['app-shell', mode === 'map' ? 'app-shell--preview-map' : null].filter(Boolean).join(' ')}>
-      <AppHeader title="Plannr" quiet />
+      <AppHeader title="Plannr" mode="viewing" quiet />
       <main className="app-main">
         <div className="shell-inner">
           {mode === 'split' ? (

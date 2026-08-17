@@ -10,11 +10,14 @@ declare global {
 
 function getPagePath(): string {
   const path = window.location.pathname
-  const previewAt = path.lastIndexOf('/preview')
-  if (previewAt !== -1) {
-    const after = path.slice(previewAt)
-    if (after === '/preview' || after.startsWith('/preview/')) {
-      return path.slice(0, previewAt + '/preview'.length)
+  for (const segment of ['/view', '/preview']) {
+    const at = path.lastIndexOf(segment)
+    if (at === -1) {
+      continue
+    }
+    const after = path.slice(at)
+    if (after === segment || after.startsWith(`${segment}/`)) {
+      return path.slice(0, at + segment.length)
     }
   }
 

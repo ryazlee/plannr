@@ -696,11 +696,11 @@ textarea.input {
   justify-content: center;
   width: 20px;
   height: 20px;
-  color: #7b8fa3;
+  color: #2563eb;
 }
 
 html.theme-dark .route-arrow {
-  color: #8fa3b6;
+  color: #60a5fa;
 }
 
 .route-arrow svg {
@@ -1373,6 +1373,43 @@ html.theme-dark .route-arrow {
 
 .preview-rail > li:has(> .preview-gap) {
   border-top: 0;
+}
+
+.preview-slot--split .preview-cluster {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-slot--split .preview-event-block {
+  padding: 0.45rem 0;
+}
+
+.preview-slot--split .preview-event-block:first-child {
+  padding-top: 0.7rem;
+}
+
+.preview-slot--split .preview-event-block:last-child {
+  padding-bottom: 0.7rem;
+}
+
+.preview-slot--split .preview-event-block + .preview-event-block {
+  position: relative;
+}
+
+.preview-slot--split .preview-event-block + .preview-event-block::before {
+  content: '';
+  position: absolute;
+  left: var(--preview-body);
+  right: 0;
+  top: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text-muted) 42%, transparent);
+}
+
+.preview-event__when--also {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .preview-gap {
