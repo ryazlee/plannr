@@ -27,7 +27,7 @@ type AddEventPanelProps = {
   onToggleEveryone: () => void
   onAddEvent: () => void
   onPrepareNew?: () => void
-  onPlacePin: (lat: number, lng: number) => void
+  onPlacePin: (lat: number, lng: number, place?: string) => void
 }
 
 export default function AddEventPanel({
@@ -134,9 +134,9 @@ export default function AddEventPanel({
                 onPrepareNew?.()
                 onPlacePin(lat, lng)
               }}
-              onSearchSelect={(lat, lng) => {
+              onSearchSelect={(lat, lng, place) => {
                 onPrepareNew?.()
-                onPlacePin(lat, lng)
+                onPlacePin(lat, lng, place)
               }}
             />
           ) : null}

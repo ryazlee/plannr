@@ -8,6 +8,7 @@ import {
   withSortedEvents,
 } from '../utils/itinerary'
 import { clearStoredState, createViewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
+import { reverseGeocode } from '../utils/geocode'
 
 export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryState>(() => hydrateState())
@@ -102,34 +103,72 @@ export function useItinerary() {
     setDraftPeople((current) => current.filter((person) => person !== name))
   }
 
-  function moveEventPin(eventId: string, lat: number, lng: number) {
+  function moveEventPin(eventId: string, lat: number, lng: number, place?: string) {
     const location = { lat: roundCoord(lat), lng: roundCoord(lng) }
+    const knownPlace = place?.trim() ?? ''
     updateState((current) => ({
       ...current,
       events: current.events.map((event) =>
-        event.id === eventId ? { ...event, lat: location.lat, lng: location.lng } : event,
+        event.id === eventId
+          ? { ...event, lat: location.lat, lng: location.lng, place: knownPlace }
+          : event,
       ),
     }))
     setPendingLocation(null)
     setNotice('Pin moved.')
+    if (!knownPlace) {
+      fillPlaceName(location.lat, location.lng, (name) => {
+        updateState((current) => ({
+          ...current,
+          events: current.events.map((event) =>
+            event.id === eventId && event.lat === location.lat && event.lng === location.lng
+              ? { ...event, place: name }
+              : event,
+          ),
+        }))
+      })
+    }
   }
 
-  function placeOnMap(lat: number, lng: number) {
+  function placeOnMap(lat: number, lng: number, place?: string) {
     const location = { lat: roundCoord(lat), lng: roundCoord(lng) }
 
     if (focusedEventId) {
-      moveEventPin(focusedEventId, location.lat, location.lng)
+      moveEventPin(focusedEventId, location.lat, location.lng, place)
       return
     }
 
-    setPendingLocation(location)
-    setNotice('Pin ready — click Add event to create it.')
+    setPendingPin(location.lat, location.lng, place)
   }
 
-  function placeNewPin(lat: number, lng: number) {
+  function placeNewPin(lat: number, lng: number, place?: string) {
     setFocusedEventId(null)
-    setPendingLocation({ lat: roundCoord(lat), lng: roundCoord(lng) })
+    setPendingPin(roundCoord(lat), roundCoord(lng), place)
+  }
+
+  function setPendingPin(lat: number, lng: number, place?: string) {
+    const knownPlace = place?.trim() ?? ''
+    setPendingLocation({ lat, lng, place: knownPlace })
     setNotice('Pin ready — click Add event to create it.')
+    if (!knownPlace) {
+      fillPlaceName(lat, lng, (name) => {
+        setPendingLocation((current) =>
+          current && current.lat === lat && current.lng === lng
+            ? { ...current, place: name }
+            : current,
+        )
+      })
+    }
+  }
+
+  function fillPlaceName(lat: number, lng: number, apply: (name: string) => void) {
+    reverseGeocode(lat, lng)
+      .then((name) => {
+        if (name) {
+          apply(name)
+        }
+      })
+      .catch(() => {})
   }
 
   function addEventAt(
@@ -149,6 +188,7 @@ export function useItinerary() {
         notes: notes.trim(),
         link: link.trim(),
         people: [...draftPeople],
+        place: location?.place?.trim() ?? '',
         lat: location?.lat ?? null,
         lng: location?.lng ?? null,
       }

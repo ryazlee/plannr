@@ -11,7 +11,7 @@ type EventMiniMapProps = {
   onMapClick?: (lat: number, lng: number) => void
   onMoveEvent?: (eventId: string, lat: number, lng: number) => void
   onSelectEvent: (eventId: string) => void
-  onSearchSelect?: (lat: number, lng: number) => void
+  onSearchSelect?: (lat: number, lng: number, place?: string) => void
   readOnly?: boolean
   showSearch?: boolean
 }
@@ -42,7 +42,7 @@ export default function EventMiniMap({
           onSelect={(place) => {
             const location = { lat: place.lat, lng: place.lng }
             setSearchTarget(location)
-            onSearchSelect?.(place.lat, place.lng)
+            onSearchSelect?.(place.lat, place.lng, place.label)
           }}
         />
       ) : null}

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react'
-import { ExternalLink } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { ExternalLink, MapPin } from 'lucide-react'
 import MapsLink from './MapsLink'
 import {
   formatAssignedPeople,
@@ -9,6 +9,7 @@ import {
   hrefFromLink,
   linkLabel,
 } from '../utils/itinerary'
+import { reverseGeocode } from '../utils/geocode'
 import type { Event } from '../types'
 
 type EventDetailsProps = {
@@ -58,6 +59,33 @@ function EventLink({ value }: { value: string }) {
   )
 }
 
+function usePlaceLabel(event: Event): string {
+  const stored = event.place.trim()
+  const lat = event.lat
+  const lng = event.lng
+  const [resolved, setResolved] = useState(stored)
+
+  useEffect(() => {
+    setResolved(stored)
+    if (stored || lat == null || lng == null) {
+      return
+    }
+
+    const controller = new AbortController()
+    reverseGeocode(lat, lng, controller.signal)
+      .then((name) => {
+        if (name) {
+          setResolved(name)
+        }
+      })
+      .catch(() => {})
+
+    return () => controller.abort()
+  }, [stored, lat, lng])
+
+  return resolved
+}
+
 export default function EventDetails({
   event,
   index,
@@ -70,6 +98,7 @@ export default function EventDetails({
   const located = hasLocation(event)
   const notes = event.notes.trim()
   const peopleLabel = formatAssignedPeople(event, allPeople)
+  const placeLabel = usePlaceLabel(event)
   const summary: ReactNode[] = []
 
   if (!showHeading && durationLabel) {
@@ -82,7 +111,7 @@ export default function EventDetails({
   const eventLink = href ? <EventLink value={event.link} /> : null
   const directions = located ? <MapsLink lat={event.lat} lng={event.lng} /> : null
 
-  if (!showHeading && !notes && summary.length === 0 && !eventLink && !directions) {
+  if (!showHeading && !notes && !placeLabel && summary.length === 0 && !eventLink && !directions) {
     return null
   }
 
@@ -97,6 +126,12 @@ export default function EventDetails({
             </p>
           ) : null}
         </>
+      ) : null}
+      {placeLabel ? (
+        <p className="event-details__place">
+          <MapPin size={14} aria-hidden="true" />
+          <span>{placeLabel}</span>
+        </p>
       ) : null}
       <MetaLine parts={summary} />
       {notes ? <p className="event-details__notes">{notes}</p> : null}

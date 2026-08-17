@@ -91,18 +91,35 @@ function PreviewCluster({
           concurrent && startLabel ? `${startLabel}, ${group.length} events at the same time` : undefined
         }
       >
-        {group.map((event, offset) => (
-          <PreviewEventBlock
-            key={event.id}
-            event={event}
-            index={startIndex + offset}
-            people={people}
-            selected={event.id === focusedEventId}
-            showTime={offset === 0}
-            concurrent={concurrent}
-            onSelectEvent={onSelectEvent}
-          />
-        ))}
+        {concurrent ? (
+          <>
+            <span className="preview-cluster__when">{startLabel || '—'}</span>
+            <div className="preview-cluster__lanes">
+              {group.map((event, offset) => (
+                <PreviewEventBlock
+                  key={event.id}
+                  event={event}
+                  index={startIndex + offset}
+                  people={people}
+                  selected={event.id === focusedEventId}
+                  lane
+                  onSelectEvent={onSelectEvent}
+                />
+              ))}
+            </div>
+          </>
+        ) : (
+          group.map((event, offset) => (
+            <PreviewEventBlock
+              key={event.id}
+              event={event}
+              index={startIndex + offset}
+              people={people}
+              selected={event.id === focusedEventId}
+              onSelectEvent={onSelectEvent}
+            />
+          ))
+        )}
       </div>
     </li>
   )
@@ -113,16 +130,14 @@ function PreviewEventBlock({
   index,
   people,
   selected,
-  showTime,
-  concurrent,
+  lane = false,
   onSelectEvent,
 }: {
   event: Event
   index: number
   people: string[]
   selected: boolean
-  showTime: boolean
-  concurrent: boolean
+  lane?: boolean
   onSelectEvent: (eventId: string) => void
 }) {
   const blockRef = useRef<HTMLDivElement>(null)
@@ -139,7 +154,11 @@ function PreviewEventBlock({
   return (
     <div
       ref={blockRef}
-      className={['preview-event-block', selected ? 'preview-event-block--active' : null]
+      className={[
+        'preview-event-block',
+        selected ? 'preview-event-block--active' : null,
+        lane ? 'preview-event-block--lane' : null,
+      ]
         .filter(Boolean)
         .join(' ')}
     >
@@ -149,18 +168,10 @@ function PreviewEventBlock({
           .filter(Boolean)
           .join(' ')}
         aria-pressed={selected}
-        aria-label={
-          concurrent && !showTime && startLabel ? `${title}, ${startLabel}, same time` : undefined
-        }
+        aria-label={lane && startLabel ? `${title}, ${startLabel}` : undefined}
         onClick={() => onSelectEvent(event.id)}
       >
-        <span
-          className={['preview-event__when', showTime ? null : 'preview-event__when--also']
-            .filter(Boolean)
-            .join(' ')}
-        >
-          {showTime ? startLabel || '—' : 'also'}
-        </span>
+        {lane ? null : <span className="preview-event__when">{startLabel || '—'}</span>}
         <span className="preview-event__title">{title}</span>
       </button>
       <div

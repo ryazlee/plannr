@@ -76,7 +76,7 @@ export default function PlannerScreen() {
                     onSelect={(place) => {
                       const location = { lat: place.lat, lng: place.lng }
                       setSearchTarget(location)
-                      placeOnMap(place.lat, place.lng)
+                      placeOnMap(place.lat, place.lng, place.label)
                     }}
                   />
                   <ItineraryMap

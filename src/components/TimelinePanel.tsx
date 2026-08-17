@@ -22,7 +22,7 @@ type TimelinePanelProps = {
   onToggleEveryone: (eventId: string) => void
   onRemoveEvent: (eventId: string) => void
   onSelectEvent: (eventId: string) => void
-  onMoveEvent: (eventId: string, lat: number, lng: number) => void
+  onMoveEvent: (eventId: string, lat: number, lng: number, place?: string) => void
 }
 
 export default function TimelinePanel({
@@ -147,9 +147,9 @@ export default function TimelinePanel({
                             onSelectEvent(event.id)
                             onMoveEvent(event.id, lat, lng)
                           }}
-                          onSearchSelect={(lat, lng) => {
+                          onSearchSelect={(lat, lng, place) => {
                             onSelectEvent(event.id)
-                            onMoveEvent(event.id, lat, lng)
+                            onMoveEvent(event.id, lat, lng, place)
                           }}
                         />
                       ) : showMaps && selected && !located ? (
@@ -162,7 +162,7 @@ export default function TimelinePanel({
                             placeholder="Search to add a pin"
                             onSelect={(place) => {
                               onSelectEvent(event.id)
-                              onMoveEvent(event.id, place.lat, place.lng)
+                              onMoveEvent(event.id, place.lat, place.lng, place.label)
                             }}
                           />
                         </div>

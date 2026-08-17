@@ -138,6 +138,7 @@ function parseEvent(value: unknown): Event | null {
     notes: typeof candidate.notes === 'string' ? candidate.notes : '',
     link: typeof candidate.link === 'string' ? candidate.link.trim() : '',
     people: parseNames(candidate.people),
+    place: typeof candidate.place === 'string' ? candidate.place.trim() : '',
     lat: located ? lat : null,
     lng: located ? lng : null,
   }
@@ -149,19 +150,18 @@ export function serializeItineraryState(state: ItineraryState): unknown {
     date: state.date,
     people: state.people,
     events: state.events.map((event) => {
-      if (!hasLocation(event)) {
-        return {
-          id: event.id,
-          startTime: event.startTime,
-          endTime: event.endTime,
-          title: event.title,
-          notes: event.notes,
-          link: event.link,
-          people: event.people,
-        }
+      const place = event.place.trim()
+      return {
+        id: event.id,
+        startTime: event.startTime,
+        endTime: event.endTime,
+        title: event.title,
+        notes: event.notes,
+        link: event.link,
+        people: event.people,
+        ...(place ? { place } : {}),
+        ...(hasLocation(event) ? { lat: event.lat, lng: event.lng } : {}),
       }
-
-      return event
     }),
   }
 }

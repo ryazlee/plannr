@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
-import { divIcon, latLngBounds, type Marker as LeafletMarker } from 'leaflet'
+import { DomEvent, divIcon, latLngBounds, type Map as LeafletMap, type Marker as LeafletMarker } from 'leaflet'
+import { Scan } from 'lucide-react'
 import type { Event, LatLng } from '../types'
 import { hasLocation } from '../utils/itinerary'
 import { useTheme } from '../theme'
@@ -206,6 +208,82 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null
 }
 
+function fitMapToEvents(
+  map: LeafletMap,
+  events: Event[],
+  pendingLocation: LatLng | null,
+  compact: boolean,
+) {
+  const located = events.filter(hasLocation)
+  const padding: [number, number] = compact ? [20, 20] : [36, 36]
+
+  if (located.length > 1) {
+    const bounds = latLngBounds(located.map((event) => [event.lat, event.lng] as [number, number]))
+    map.flyToBounds(bounds, { padding, maxZoom: 15, duration: 0.45 })
+    return
+  }
+
+  const only = located[0]
+  if (only) {
+    map.flyTo([only.lat, only.lng], compact ? 15 : 13, { duration: 0.45 })
+    return
+  }
+
+  if (pendingLocation) {
+    map.flyTo([pendingLocation.lat, pendingLocation.lng], 13, { duration: 0.45 })
+    return
+  }
+
+  map.zoomOut()
+}
+
+function ZoomOutControl({
+  events,
+  pendingLocation,
+  compact,
+}: {
+  events: Event[]
+  pendingLocation: LatLng | null
+  compact: boolean
+}) {
+  const map = useMap()
+  const [corner, setCorner] = useState<Element | null>(null)
+
+  useEffect(() => {
+    setCorner(map.getContainer().querySelector('.leaflet-top.leaflet-left'))
+  }, [map])
+
+  function attachControl(node: HTMLDivElement | null) {
+    if (!node) {
+      return
+    }
+    DomEvent.disableClickPropagation(node)
+    DomEvent.disableScrollPropagation(node)
+  }
+
+  if (compact || !corner) {
+    return null
+  }
+
+  return createPortal(
+    <div ref={attachControl} className="leaflet-bar map-fit-control">
+      <button
+        type="button"
+        title="Zoom out"
+        aria-label="Zoom out to all events"
+        onClick={(click) => {
+          click.preventDefault()
+          click.stopPropagation()
+          fitMapToEvents(map, events, pendingLocation, compact)
+        }}
+      >
+        <Scan size={16} aria-hidden="true" />
+      </button>
+    </div>,
+    corner,
+  )
+}
+
 function FitToEvents({
   events,
   pendingLocation,
@@ -367,6 +445,7 @@ export default function ItineraryMap({
       />
       {readOnly || !onMapClick ? null : <MapClickHandler onMapClick={onMapClick} />}
       <FitToEvents events={events} pendingLocation={pendingLocation} compact={compact} />
+      <ZoomOutControl events={events} pendingLocation={pendingLocation} compact={compact} />
       {compact ? null : <FlyToFocused event={focusedEvent} />}
       <FlyToSearch target={searchTarget} />
       <InvalidateOnResize />

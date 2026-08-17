@@ -82,3 +82,49 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
     })
     .filter((place): place is PlaceResult => place !== null)
 }
+
+const REVERSE_URL = 'https://nominatim.openstreetmap.org/reverse'
+const reverseCache = new Map<string, string>()
+
+function reverseCacheKey(lat: number, lng: number): string {
+  return `${lat.toFixed(5)},${lng.toFixed(5)}`
+}
+
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+  signal?: AbortSignal,
+): Promise<string> {
+  const key = reverseCacheKey(lat, lng)
+  const cached = reverseCache.get(key)
+  if (cached != null) {
+    return cached
+  }
+
+  const url = new URL(REVERSE_URL)
+  url.searchParams.set('lat', String(lat))
+  url.searchParams.set('lon', String(lng))
+  url.searchParams.set('format', 'jsonv2')
+  url.searchParams.set('zoom', '18')
+
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Reverse geocode failed')
+  }
+
+  const hit = (await response.json()) as NominatimHit & { error?: string }
+  if (!hit?.display_name) {
+    reverseCache.set(key, '')
+    return ''
+  }
+
+  const { label } = splitLabel(hit)
+  reverseCache.set(key, label)
+  return label
+}

@@ -6,6 +6,7 @@ export interface Event {
   notes: string
   link: string
   people: string[]
+  place: string
   lat: number | null
   lng: number | null
 }
@@ -20,6 +21,7 @@ export interface ItineraryState {
 export type LatLng = {
   lat: number
   lng: number
+  place?: string
 }
 
 export type LocatedEvent = Event & {

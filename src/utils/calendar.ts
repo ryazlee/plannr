@@ -117,6 +117,9 @@ function formatUtcStamp(date: Date): string {
 }
 
 function locationFromEvent(event: Event): string {
+  if (event.place.trim()) {
+    return event.place.trim()
+  }
   if (!hasLocation(event)) {
     return ''
   }
