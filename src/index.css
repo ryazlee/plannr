@@ -538,7 +538,7 @@ textarea.input {
   display: none;
 }
 
-.preview-map--solo {
+.preview-map.preview-map--solo {
   display: flex;
   flex-direction: column;
   grid-area: map;
@@ -587,8 +587,10 @@ textarea.input {
 }
 
 .map-canvas .leaflet-container {
-  height: 100%;
-  width: 100%;
+  position: absolute;
+  inset: 0;
+  height: auto;
+  width: auto;
   z-index: 0;
   background: var(--inset);
   cursor: crosshair;
@@ -1237,11 +1239,47 @@ textarea.input {
   border-top: 1px solid var(--border);
 }
 
+.preview-rail > li:has(> .preview-gap) {
+  border-top: 0;
+}
+
 .preview-gap {
-  margin: 0 0 0 var(--preview-body);
-  padding: 0.45rem 0 0;
+  display: grid;
+  grid-template-columns: var(--preview-time) minmax(0, 1fr);
+  gap: var(--preview-gutter);
+  align-items: center;
+  margin: 0;
+  padding: 0.7rem 0;
+}
+
+.preview-gap--hour {
+  padding: 1.15rem 0;
+}
+
+.preview-gap__label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  grid-column: 2;
+  margin: 0;
   font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.preview-gap__label::before,
+.preview-gap__label::after {
+  content: '';
+  flex: 1 1 auto;
+  min-width: 0.75rem;
+  border-top: 1px dashed color-mix(in srgb, var(--text-muted) 55%, transparent);
+}
+
+.preview-gap--hour .preview-gap__label {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
 }
 
 .preview-event {
@@ -1290,6 +1328,47 @@ body.is-resizing * {
 
 body.is-resizing .leaflet-container {
   pointer-events: none;
+}
+
+.app-shell--preview-map {
+  height: 100svh;
+  overflow: hidden;
+}
+
+.app-shell--preview-map .app-main {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0.75rem;
+}
+
+.app-shell--preview-map .shell-inner {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell--preview-map .preview-layout--map {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.app-shell--preview-map .preview-hero {
+  flex-shrink: 0;
+}
+
+.app-shell--preview-map .preview-map.preview-map--solo {
+  flex: 1 1 auto;
+  min-height: 16rem;
+  height: auto;
+  width: 100%;
+}
+
+.app-shell--preview-map .preview-map--solo .leaflet-container {
+  touch-action: none;
 }
 
 @media (min-width: 960px) {

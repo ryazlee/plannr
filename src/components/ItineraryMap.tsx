@@ -120,6 +120,9 @@ function InvalidateOnResize() {
     const frame = window.requestAnimationFrame(() => {
       map.invalidateSize()
     })
+    const later = window.setTimeout(() => {
+      map.invalidateSize()
+    }, 180)
 
     const observer = new ResizeObserver(() => {
       map.invalidateSize()
@@ -128,6 +131,7 @@ function InvalidateOnResize() {
 
     return () => {
       window.cancelAnimationFrame(frame)
+      window.clearTimeout(later)
       observer.disconnect()
     }
   }, [map])

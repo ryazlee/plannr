@@ -275,6 +275,21 @@ export function formatDuration(minutes: number): string {
   return `${hours}h ${rest}m`
 }
 
+export function formatGapLabel(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes} min`
+  }
+
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (rest === 0) {
+    return hours === 1 ? '1 hour' : `${hours} hours`
+  }
+
+  const hourLabel = hours === 1 ? '1 hr' : `${hours} hr`
+  return `${hourLabel} ${rest} min`
+}
+
 export function eventDurationMinutes(event: Pick<Event, 'startTime' | 'endTime'>): number | null {
   if (!event.startTime) {
     return null

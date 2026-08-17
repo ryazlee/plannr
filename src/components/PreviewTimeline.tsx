@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import EventDetails from './EventDetails'
-import { effectiveEndTime, formatDuration, formatTime, minutesBetween } from '../utils/itinerary'
+import { effectiveEndTime, formatGapLabel, formatTime, minutesBetween } from '../utils/itinerary'
 import type { Event } from '../types'
 
 type PreviewTimelineProps = {
@@ -68,7 +68,11 @@ function PreviewEventRow({
 
   return (
     <li ref={rowRef}>
-      {gap ? <p className="preview-gap">{formatDuration(gap)}</p> : null}
+      {gap ? (
+        <div className={['preview-gap', gap >= 60 ? 'preview-gap--hour' : null].filter(Boolean).join(' ')}>
+          <p className="preview-gap__label">{formatGapLabel(gap)}</p>
+        </div>
+      ) : null}
       <div
         className={['preview-event-block', selected ? 'preview-event-block--active' : null]
           .filter(Boolean)

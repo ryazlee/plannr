@@ -141,7 +141,7 @@ export default function PreviewScreen() {
   )
 
   return (
-    <div className="app-shell">
+    <div className={['app-shell', mode === 'map' ? 'app-shell--preview-map' : null].filter(Boolean).join(' ')}>
       <AppHeader title="Plannr" quiet />
       <main className="app-main">
         <div className="shell-inner">
