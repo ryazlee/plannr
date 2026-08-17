@@ -1,10 +1,25 @@
-import { formatDuration, formatEventWindow, hrefFromLink, linkLabel, minutesBetween } from '../utils/itinerary'
+import { useEffect, useRef } from 'react'
+import EventDetails from './EventDetails'
+import {
+  effectiveEndTime,
+  formatDuration,
+  formatEventWindow,
+  hasLocation,
+  hrefFromLink,
+  minutesBetween,
+} from '../utils/itinerary'
 import type { Event } from '../types'
 
 type PreviewTimelineProps = {
   events: Event[]
   focusedEventId: string | null
   onSelectEvent: (eventId: string) => void
+}
+
+function hasExtraDetails(event: Event): boolean {
+  return Boolean(
+    event.notes.trim() || event.people.length > 0 || hrefFromLink(event.link) || hasLocation(event),
+  )
 }
 
 export default function PreviewTimeline({
@@ -18,66 +33,77 @@ export default function PreviewTimeline({
 
   return (
     <ol className="preview-rail">
-      {events.map((event, index) => {
-        const previous = events[index - 1]
-        const previousEnd = previous ? previous.endTime || previous.startTime : ''
-        const gap =
-          previous && event.startTime && previousEnd
-            ? minutesBetween(previousEnd, event.startTime)
-            : null
-        const windowLabel = formatEventWindow(event)
-        const href = hrefFromLink(event.link)
-
-        return (
-          <li key={event.id}>
-            {gap ? <p className="preview-gap">{formatDuration(gap)}</p> : null}
-            <button
-              type="button"
-              className={[
-                'preview-event',
-                event.id === focusedEventId ? 'preview-event--active' : null,
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              onClick={() => onSelectEvent(event.id)}
-            >
-              <span className="preview-event__time">
-                {windowLabel || '—'}
-              </span>
-              <span className="preview-event__index" aria-hidden="true">
-                {index + 1}
-              </span>
-              <span className="preview-event__body">
-                <span className="preview-event__title">
-                  {event.title || `Event ${index + 1}`}
-                </span>
-                {event.notes.trim() ? (
-                  <span className="preview-event__notes">{event.notes}</span>
-                ) : null}
-                {event.people.length > 0 ? (
-                  <span className="chip-row preview-event__people">
-                    {event.people.map((person) => (
-                      <span key={person} className="chip chip--muted">
-                        {person}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-              </span>
-            </button>
-            {href ? (
-              <a
-                className="preview-event__link"
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {linkLabel(event.link)}
-              </a>
-            ) : null}
-          </li>
-        )
-      })}
+      {events.map((event, index) => (
+        <PreviewEventRow
+          key={event.id}
+          event={event}
+          index={index}
+          events={events}
+          selected={event.id === focusedEventId}
+          onSelectEvent={onSelectEvent}
+        />
+      ))}
     </ol>
+  )
+}
+
+function PreviewEventRow({
+  event,
+  index,
+  events,
+  selected,
+  onSelectEvent,
+}: {
+  event: Event
+  index: number
+  events: Event[]
+  selected: boolean
+  onSelectEvent: (eventId: string) => void
+}) {
+  const rowRef = useRef<HTMLLIElement>(null)
+  const previous = events[index - 1]
+  const previousEnd = previous ? effectiveEndTime(previous) : ''
+  const gap =
+    previous && event.startTime && previousEnd ? minutesBetween(previousEnd, event.startTime) : null
+  const windowLabel = formatEventWindow(event)
+
+  useEffect(() => {
+    if (!selected) {
+      return
+    }
+    rowRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [selected])
+
+  return (
+    <li ref={rowRef}>
+      {gap ? <p className="preview-gap">{formatDuration(gap)}</p> : null}
+      <div
+        className={['preview-event-block', selected ? 'preview-event-block--active' : null]
+          .filter(Boolean)
+          .join(' ')}
+      >
+        <button
+          type="button"
+          className={['preview-event', selected ? 'preview-event--active' : null]
+            .filter(Boolean)
+            .join(' ')}
+          aria-expanded={selected}
+          onClick={() => onSelectEvent(event.id)}
+        >
+          <span className="preview-event__time">{windowLabel || '—'}</span>
+          <span className="preview-event__index" aria-hidden="true">
+            {index + 1}
+          </span>
+          <span className="preview-event__body">
+            <span className="preview-event__title">{event.title || `Event ${index + 1}`}</span>
+          </span>
+        </button>
+        {selected && hasExtraDetails(event) ? (
+          <div className="preview-event__details">
+            <EventDetails event={event} index={index + 1} showHeading={false} />
+          </div>
+        ) : null}
+      </div>
+    </li>
   )
 }

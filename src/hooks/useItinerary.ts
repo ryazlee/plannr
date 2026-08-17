@@ -4,7 +4,6 @@ import {
   createEmptyState,
   createEventId,
   currentTimeInput,
-  offsetTime,
   roundCoord,
   withSortedEvents,
 } from '../utils/itinerary'
@@ -13,7 +12,7 @@ import { createPreviewUrl, encodeUrlState, hydrateState, writeUrlState } from '.
 export function useItinerary() {
   const [itinerary, setItinerary] = useState<ItineraryState>(() => hydrateState())
   const [draftStartTime, setDraftStartTime] = useState(currentTimeInput)
-  const [draftEndTime, setDraftEndTime] = useState(() => offsetTime(currentTimeInput(), 60))
+  const [draftEndTime, setDraftEndTime] = useState('')
   const [draftTitle, setDraftTitle] = useState('')
   const [draftNotes, setDraftNotes] = useState('')
   const [draftLink, setDraftLink] = useState('')
@@ -123,8 +122,22 @@ export function useItinerary() {
     addEventAt(location, title, draftStartTime, draftEndTime, draftNotes, draftLink)
   }
 
+  function placeNewPin(lat: number, lng: number) {
+    const location = { lat: roundCoord(lat), lng: roundCoord(lng) }
+    setFocusedEventId(null)
+    const title = draftTitle.trim()
+
+    if (!title) {
+      setPendingLocation(location)
+      setNotice('Add a title, then click Add event — or type a title and tap the map again.')
+      return
+    }
+
+    addEventAt(location, title, draftStartTime, draftEndTime, draftNotes, draftLink)
+  }
+
   function addEventAt(
-    location: LatLng,
+    location: LatLng | null,
     title: string,
     startTime: string,
     endTime: string,
@@ -140,8 +153,8 @@ export function useItinerary() {
         notes: notes.trim(),
         link: link.trim(),
         people: [...current.people],
-        lat: location.lat,
-        lng: location.lng,
+        lat: location?.lat ?? null,
+        lng: location?.lng ?? null,
       }
 
       return {
@@ -161,11 +174,6 @@ export function useItinerary() {
     const title = draftTitle.trim()
     if (!title) {
       setNotice('Give the event a title.')
-      return
-    }
-
-    if (!pendingLocation) {
-      setNotice('Click the map to place this event.')
       return
     }
 
@@ -247,7 +255,7 @@ export function useItinerary() {
       setItinerary(createEmptyState())
     })
     setDraftStartTime(start)
-    setDraftEndTime(offsetTime(start, 60))
+    setDraftEndTime('')
     setDraftTitle('')
     setDraftNotes('')
     setDraftLink('')
@@ -275,11 +283,13 @@ export function useItinerary() {
     setDraftLink,
     setPersonDraft,
     setFocusedEventId,
+    setNotice,
     updateTitle,
     updateDate,
     addPerson,
     removePerson,
     placeOnMap,
+    placeNewPin,
     moveEventPin,
     addEvent,
     updateEvent,

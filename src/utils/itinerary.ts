@@ -1,4 +1,4 @@
-import type { Event, ItineraryState } from '../types'
+import type { Event, ItineraryState, LocatedEvent } from '../types'
 
 export function createEventId(): string {
   return crypto.randomUUID()
@@ -50,7 +50,7 @@ export function sortEvents(events: Event[]): Event[] {
     if (!right.startTime) return -1
     const startCompare = left.startTime.localeCompare(right.startTime)
     if (startCompare !== 0) return startCompare
-    return (left.endTime || left.startTime).localeCompare(right.endTime || right.startTime)
+    return (effectiveEndTime(left) || left.startTime).localeCompare(effectiveEndTime(right) || right.startTime)
   })
 }
 
@@ -65,17 +65,24 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
 }
 
+export function hasLocation(event: Pick<Event, 'lat' | 'lng'>): event is LocatedEvent {
+  return event.lat != null && event.lng != null
+}
+
+function parseCoord(value: unknown): number | null {
+  if (isFiniteNumber(value)) {
+    return roundCoord(value)
+  }
+  return null
+}
+
 function parseEvent(value: unknown): Event | null {
   if (!value || typeof value !== 'object') {
     return null
   }
 
   const candidate = value as Partial<Event> & { time?: string }
-  if (
-    typeof candidate.title !== 'string'
-    || !isFiniteNumber(candidate.lat)
-    || !isFiniteNumber(candidate.lng)
-  ) {
+  if (typeof candidate.title !== 'string') {
     return null
   }
 
@@ -86,6 +93,10 @@ function parseEvent(value: unknown): Event | null {
         ? candidate.time
         : ''
 
+  const lat = parseCoord(candidate.lat)
+  const lng = parseCoord(candidate.lng)
+  const located = lat != null && lng != null
+
   return {
     id: typeof candidate.id === 'string' && candidate.id ? candidate.id : createEventId(),
     startTime,
@@ -94,8 +105,31 @@ function parseEvent(value: unknown): Event | null {
     notes: typeof candidate.notes === 'string' ? candidate.notes : '',
     link: typeof candidate.link === 'string' ? candidate.link.trim() : '',
     people: parseNames(candidate.people),
-    lat: roundCoord(candidate.lat),
-    lng: roundCoord(candidate.lng),
+    lat: located ? lat : null,
+    lng: located ? lng : null,
+  }
+}
+
+export function serializeItineraryState(state: ItineraryState): unknown {
+  return {
+    title: state.title,
+    date: state.date,
+    people: state.people,
+    events: state.events.map((event) => {
+      if (!hasLocation(event)) {
+        return {
+          id: event.id,
+          startTime: event.startTime,
+          endTime: event.endTime,
+          title: event.title,
+          notes: event.notes,
+          link: event.link,
+          people: event.people,
+        }
+      }
+
+      return event
+    }),
   }
 }
 
@@ -206,6 +240,16 @@ export function offsetTime(value: string, deltaMinutes: number): string {
   return minutesToTime(minutes + deltaMinutes)
 }
 
+export function effectiveEndTime(event: Pick<Event, 'startTime' | 'endTime'>): string {
+  if (event.endTime) {
+    return event.endTime
+  }
+  if (!event.startTime) {
+    return ''
+  }
+  return offsetTime(event.startTime, 60)
+}
+
 export function minutesBetween(start: string, end: string): number | null {
   const startMinutes = timeToMinutes(start)
   const endMinutes = timeToMinutes(end)
@@ -236,11 +280,12 @@ export function formatEventWindow(event: Event): string {
     return event.endTime ? formatTime(event.endTime) : ''
   }
 
-  if (!event.endTime || event.endTime === event.startTime) {
+  const end = effectiveEndTime(event)
+  if (!end || end === event.startTime) {
     return formatTime(event.startTime)
   }
 
-  return `${formatTime(event.startTime)} – ${formatTime(event.endTime)}`
+  return `${formatTime(event.startTime)} – ${formatTime(end)}`
 }
 
 export function formatTimeRange(events: Event[]): string {
@@ -256,7 +301,7 @@ export function formatTimeRange(events: Event[]): string {
   }
 
   const rangeStart = first.startTime || first.endTime
-  const rangeEnd = last.endTime || last.startTime
+  const rangeEnd = effectiveEndTime(last) || last.startTime
   if (!rangeEnd || rangeEnd === rangeStart) {
     return formatTime(rangeStart)
   }

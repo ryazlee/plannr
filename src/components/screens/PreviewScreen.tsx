@@ -2,18 +2,27 @@ import { useMemo, useState } from 'react'
 import { Link2, Pencil } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
+import { useCalendarExport } from '../CalendarExport'
 import ItineraryMap from '../ItineraryMap'
-import MapSearch from '../MapSearch'
+import PreviewModeControl from '../PreviewModeControl'
 import PreviewTimeline from '../PreviewTimeline'
+import SplitLayout from '../SplitLayout'
+import { useDesktopLayout } from '../../hooks/useMediaQuery'
+import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
 import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/itinerary'
 import { createEditorLocation, createPreviewUrl, hydrateState } from '../../utils/urlState'
-import type { LatLng } from '../../types'
+import { hasCalendarDate } from '../../utils/calendar'
 
 export default function PreviewScreen() {
   const itinerary = useMemo(() => hydrateState(), [])
+  const isDesktop = useDesktopLayout()
+  const [previewMode, setPreviewMode] = usePreviewMode()
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null)
-  const [searchTarget, setSearchTarget] = useState<LatLng | null>(null)
-  const [notice, setNotice] = useState('')
+  const [notice, setNotice] = useState(
+    hasCalendarDate(itinerary.date) || isEmptyState(itinerary)
+      ? ''
+      : 'Set a date in the editor before adding this plan to Google Calendar.',
+  )
 
   const editorLocation = createEditorLocation(itinerary)
   const empty = isEmptyState(itinerary)
@@ -29,6 +38,8 @@ export default function PreviewScreen() {
   const subtitle = [formatDisplayDate(itinerary.date), timeRange, eventLabel, peopleLabel]
     .filter(Boolean)
     .join(' · ')
+  const mode = effectivePreviewMode(previewMode, isDesktop)
+  const { addDay, addEachEvent } = useCalendarExport(itinerary, setNotice)
 
   async function copyShareLink() {
     try {
@@ -37,6 +48,14 @@ export default function PreviewScreen() {
     } catch {
       setNotice('Clipboard access failed. Copy the URL from the address bar instead.')
     }
+  }
+
+  function selectEvent(eventId: string) {
+    setFocusedEventId(eventId)
+  }
+
+  function toggleEvent(eventId: string) {
+    setFocusedEventId((current) => (current === eventId ? null : eventId))
   }
 
   if (empty) {
@@ -55,68 +74,94 @@ export default function PreviewScreen() {
     )
   }
 
+  const hero = (
+    <div className="preview-hero">
+      <h2 className="preview-title">{itinerary.title.trim() || 'Untitled plan'}</h2>
+      {subtitle ? <p className="preview-meta">{subtitle}</p> : null}
+
+      <div className="preview-toolbar">
+        <PreviewModeControl
+          mode={mode}
+          isDesktop={isDesktop}
+          onChange={setPreviewMode}
+          onAddDay={addDay}
+          onAddEachEvent={addEachEvent}
+        />
+        <Button
+          label="Copy link"
+          icon={<Link2 size={16} />}
+          size="sm"
+          variant="secondary"
+          onClick={copyShareLink}
+        />
+        <Button
+          label="Edit"
+          icon={<Pencil size={16} />}
+          size="sm"
+          variant="ghost"
+          to={editorLocation}
+        />
+      </div>
+
+      {notice ? <p className="notice">{notice}</p> : null}
+    </div>
+  )
+
+  const map = (
+    <div className="surface-card map-card">
+      <div className="map-canvas map-canvas--readonly">
+        <ItineraryMap
+          events={itinerary.events}
+          focusedEventId={focusedEventId}
+          onSelectEvent={selectEvent}
+          readOnly
+        />
+      </div>
+    </div>
+  )
+
+  const timeline = (
+    <div className="preview-timeline">
+      <div className="surface-card">
+        <div className="surface-card__header">
+          <p className="section-label">Day</p>
+        </div>
+        <div className="surface-card__body">
+          <PreviewTimeline
+            events={itinerary.events}
+            focusedEventId={focusedEventId}
+            onSelectEvent={toggleEvent}
+          />
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div className="app-shell">
       <AppHeader title="Plannr" subtitle="Shared itinerary" mode="viewing" />
       <main className="app-main">
         <div className="shell-inner">
-          <div className="preview-layout">
-            <div className="preview-sidebar">
-              <div className="preview-hero">
-                <h2 className="preview-title">{itinerary.title.trim() || 'Untitled plan'}</h2>
-                {subtitle ? <p className="preview-meta">{subtitle}</p> : null}
-
-                <div className="btn-grid">
-                  <Button
-                    label="Copy link to share"
-                    icon={<Link2 size={16} />}
-                    onClick={copyShareLink}
-                  />
-                  <Button
-                    label="Edit plan"
-                    icon={<Pencil size={16} />}
-                    variant="secondary"
-                    to={editorLocation}
-                  />
-                </div>
-                {notice ? <p className="notice">{notice}</p> : null}
-              </div>
-
-              <div className="preview-timeline">
-                <div className="surface-card">
-                  <div className="surface-card__header">
-                    <p className="section-label">Day</p>
-                  </div>
-                  <div className="surface-card__body">
-                    <PreviewTimeline
-                      events={itinerary.events}
-                      focusedEventId={focusedEventId}
-                      onSelectEvent={setFocusedEventId}
-                    />
-                  </div>
-                </div>
-              </div>
+          {mode === 'split' ? (
+            <SplitLayout
+              className="preview-layout"
+              mapClassName="preview-map"
+              sidebarClassName="preview-sidebar"
+              isDesktop={isDesktop}
+              map={map}
+              sidebar={
+                <>
+                  {hero}
+                  {timeline}
+                </>
+              }
+            />
+          ) : (
+            <div className={`preview-layout preview-layout--${mode}`}>
+              {hero}
+              {mode === 'map' ? <div className="preview-map preview-map--solo">{map}</div> : timeline}
             </div>
-
-            <div className="preview-map">
-              <div className="surface-card map-card">
-                <div className="map-canvas map-canvas--readonly">
-                  <MapSearch
-                    onSelect={(place) => {
-                      setSearchTarget({ lat: place.lat, lng: place.lng })
-                    }}
-                  />
-                  <ItineraryMap
-                    events={itinerary.events}
-                    focusedEventId={focusedEventId}
-                    onSelectEvent={setFocusedEventId}
-                    searchTarget={searchTarget}
-                    readOnly
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </main>
     </div>

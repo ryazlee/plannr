@@ -1,6 +1,7 @@
 export type PlaceResult = {
   id: string
   label: string
+  detail: string
   lat: number
   lng: number
 }
@@ -8,11 +9,36 @@ export type PlaceResult = {
 type NominatimHit = {
   place_id: number
   display_name: string
+  name?: string
   lat: string
   lon: string
 }
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
+
+function splitLabel(hit: NominatimHit): { label: string; detail: string } {
+  const display = hit.display_name.trim()
+  const name = hit.name?.trim()
+
+  if (name) {
+    const remainder = display.startsWith(name)
+      ? display.slice(name.length).replace(/^,\s*/, '')
+      : display === name
+        ? ''
+        : display
+    return { label: name, detail: remainder }
+  }
+
+  const comma = display.indexOf(',')
+  if (comma === -1) {
+    return { label: display, detail: '' }
+  }
+
+  return {
+    label: display.slice(0, comma).trim(),
+    detail: display.slice(comma + 1).trim(),
+  }
+}
 
 export async function searchPlaces(query: string, signal?: AbortSignal): Promise<PlaceResult[]> {
   const trimmed = query.trim()
@@ -45,9 +71,11 @@ export async function searchPlaces(query: string, signal?: AbortSignal): Promise
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         return null
       }
+      const { label, detail } = splitLabel(hit)
       return {
         id: String(hit.place_id),
-        label: hit.display_name,
+        label,
+        detail,
         lat,
         lng,
       } satisfies PlaceResult

@@ -1,6 +1,6 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
 import type { ItineraryState } from '../types'
-import { createEmptyState, isEmptyState, parseItineraryState } from './itinerary'
+import { createEmptyState, isEmptyState, parseItineraryState, serializeItineraryState } from './itinerary'
 
 const PLAN_PARAM = 'plan'
 const LZ_PREFIX = 's:'
@@ -40,7 +40,7 @@ export function encodeUrlState(state: ItineraryState): string {
     return ''
   }
 
-  return compressToEncodedURIComponent(JSON.stringify(state))
+  return compressToEncodedURIComponent(JSON.stringify(serializeItineraryState(state)))
 }
 
 export function readUrlState(): ItineraryState | null {

@@ -1,6 +1,8 @@
 import { MapPin } from 'lucide-react'
 import Button from './Button'
+import EventMiniMap from './EventMiniMap'
 import SectionCard from './SectionCard'
+import TimeFields from './TimeFields'
 import type { LatLng } from '../types'
 
 type AddEventPanelProps = {
@@ -10,6 +12,8 @@ type AddEventPanelProps = {
   notes: string
   link: string
   pendingLocation: LatLng | null
+  showMap: boolean
+  nextIndex: number
   onStartTimeChange: (value: string) => void
   onEndTimeChange: (value: string) => void
   onTitleChange: (value: string) => void
@@ -17,6 +21,7 @@ type AddEventPanelProps = {
   onLinkChange: (value: string) => void
   onAddEvent: () => void
   onPrepareNew?: () => void
+  onPlacePin: (lat: number, lng: number) => void
 }
 
 export default function AddEventPanel({
@@ -26,6 +31,8 @@ export default function AddEventPanel({
   notes,
   link,
   pendingLocation,
+  showMap,
+  nextIndex,
   onStartTimeChange,
   onEndTimeChange,
   onTitleChange,
@@ -33,10 +40,11 @@ export default function AddEventPanel({
   onLinkChange,
   onAddEvent,
   onPrepareNew,
+  onPlacePin,
 }: AddEventPanelProps) {
   const coords = pendingLocation
-    ? `${pendingLocation.lat.toFixed(4)}, ${pendingLocation.lng.toFixed(4)}`
-    : 'Click the map or search to drop a pin'
+    ? `Pin ready · ${pendingLocation.lat.toFixed(4)}, ${pendingLocation.lng.toFixed(4)}`
+    : 'A map pin is optional'
 
   return (
     <div className="planner-add">
@@ -53,31 +61,13 @@ export default function AddEventPanel({
             />
           </label>
 
-          <div className="time-window">
-            <label className="field">
-              <span className="field__label">Start</span>
-              <input
-                className="input input--time"
-                type="time"
-                value={startTime}
-                onChange={(event) => onStartTimeChange(event.target.value)}
-                onFocus={onPrepareNew}
-              />
-            </label>
-            <span className="time-window__sep" aria-hidden="true">
-              –
-            </span>
-            <label className="field">
-              <span className="field__label">End</span>
-              <input
-                className="input input--time"
-                type="time"
-                value={endTime}
-                onChange={(event) => onEndTimeChange(event.target.value)}
-                onFocus={onPrepareNew}
-              />
-            </label>
-          </div>
+          <TimeFields
+            startTime={startTime}
+            endTime={endTime}
+            onStartChange={onStartTimeChange}
+            onEndChange={onEndTimeChange}
+            onFocus={onPrepareNew}
+          />
 
           <label className="field">
             <span className="field__label">Notes</span>
@@ -104,13 +94,32 @@ export default function AddEventPanel({
             />
           </label>
 
+          {showMap ? (
+            <EventMiniMap
+              events={[]}
+              pendingLocation={pendingLocation}
+              focusedEventId={null}
+              startIndex={nextIndex}
+              showSearch
+              onSelectEvent={() => onPrepareNew?.()}
+              onMapClick={(lat, lng) => {
+                onPrepareNew?.()
+                onPlacePin(lat, lng)
+              }}
+              onSearchSelect={(lat, lng) => {
+                onPrepareNew?.()
+                onPlacePin(lat, lng)
+              }}
+            />
+          ) : null}
+
           <Button
-            label={pendingLocation ? 'Add event' : 'Place on map first'}
+            label="Add event"
             icon={<MapPin size={16} />}
-            variant={pendingLocation ? 'primary' : 'secondary'}
+            variant={title.trim() ? 'primary' : 'secondary'}
             block
             onClick={onAddEvent}
-            disabled={!title.trim() || !pendingLocation}
+            disabled={!title.trim()}
           />
         </div>
       </SectionCard>

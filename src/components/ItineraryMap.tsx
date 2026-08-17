@@ -1,9 +1,10 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
-import { divIcon, latLngBounds } from 'leaflet'
+import { divIcon, latLngBounds, type Marker as LeafletMarker } from 'leaflet'
 import type { Event, LatLng } from '../types'
-import { formatEventWindow, hrefFromLink, linkLabel } from '../utils/itinerary'
+import { hasLocation } from '../utils/itinerary'
 import { useTheme } from '../theme'
+import EventDetails from './EventDetails'
 
 const FALLBACK_CENTER: [number, number] = [37.7749, -122.4194]
 const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
@@ -20,6 +21,8 @@ type ItineraryMapProps = {
   onSelectEvent: (eventId: string) => void
   readOnly?: boolean
   searchTarget?: LatLng | null
+  compact?: boolean
+  startIndex?: number
 }
 
 function markerIcon(index: number, pending = false) {
@@ -44,32 +47,36 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
 function FitToEvents({
   events,
   pendingLocation,
+  compact,
 }: {
   events: Event[]
   pendingLocation: LatLng | null
+  compact: boolean
 }) {
   const map = useMap()
+  const located = events.filter(hasLocation)
   const pendingKey = pendingLocation ? `${pendingLocation.lat},${pendingLocation.lng}` : ''
+  const singleZoom = compact ? 15 : 14
 
   useEffect(() => {
-    if (events.length > 1) {
-      const bounds = latLngBounds(events.map((event) => [event.lat, event.lng] as [number, number]))
-      map.fitBounds(bounds, { padding: [36, 36], maxZoom: 15 })
+    if (located.length > 1) {
+      const bounds = latLngBounds(located.map((event) => [event.lat, event.lng] as [number, number]))
+      map.fitBounds(bounds, { padding: compact ? [20, 20] : [36, 36], maxZoom: 15 })
       return
     }
 
-    const only = events[0]
+    const only = located[0]
     if (only) {
-      map.setView([only.lat, only.lng], 14)
+      map.setView([only.lat, only.lng], singleZoom)
     }
-  }, [map, events.length])
+  }, [map, located.length, compact, singleZoom])
 
   useEffect(() => {
-    if (events.length > 0 || !pendingLocation) {
+    if (located.length > 0 || !pendingLocation) {
       return
     }
     map.setView([pendingLocation.lat, pendingLocation.lng], 14)
-  }, [map, pendingKey, pendingLocation, events.length])
+  }, [map, pendingKey, pendingLocation, located.length])
 
   return null
 }
@@ -156,23 +163,34 @@ export default function ItineraryMap({
   onSelectEvent,
   readOnly = false,
   searchTarget = null,
+  compact = false,
+  startIndex = 1,
 }: ItineraryMapProps) {
   const { theme } = useTheme()
+  const markerRefs = useRef<Map<string, LeafletMarker>>(new Map())
   const focusedEvent = events.find((event) => event.id === focusedEventId)
+  const locatedEvents = useMemo(() => events.filter(hasLocation), [events])
   const linePositions = useMemo(
-    () => events.map((event) => [event.lat, event.lng] as [number, number]),
-    [events],
+    () => locatedEvents.map((event) => [event.lat, event.lng] as [number, number]),
+    [locatedEvents],
   )
-  const startCenter: [number, number] = events[0]
-    ? [events[0].lat, events[0].lng]
+  const startCenter: [number, number] = locatedEvents[0]
+    ? [locatedEvents[0].lat, locatedEvents[0].lng]
     : pendingLocation
       ? [pendingLocation.lat, pendingLocation.lng]
       : FALLBACK_CENTER
 
+  useEffect(() => {
+    if (!readOnly || compact || !focusedEventId) {
+      return
+    }
+    markerRefs.current.get(focusedEventId)?.openPopup()
+  }, [readOnly, compact, focusedEventId])
+
   return (
     <MapContainer
       center={startCenter}
-      zoom={events.length > 0 ? 13 : 12}
+      zoom={locatedEvents.length > 0 ? (compact ? 15 : 13) : 12}
       scrollWheelZoom
       className="h-full w-full"
     >
@@ -181,13 +199,13 @@ export default function ItineraryMap({
         attribution={theme === 'dark' ? DARK_ATTR : LIGHT_ATTR}
       />
       {readOnly || !onMapClick ? null : <MapClickHandler onMapClick={onMapClick} />}
-      <FitToEvents events={events} pendingLocation={pendingLocation} />
-      <FlyToFocused event={focusedEvent} />
+      <FitToEvents events={events} pendingLocation={pendingLocation} compact={compact} />
+      {compact ? null : <FlyToFocused event={focusedEvent} />}
       <FlyToSearch target={searchTarget} />
       <InvalidateOnResize />
-      {readOnly ? null : <UserLocation enabled={events.length === 0 && !pendingLocation} />}
+      {readOnly ? null : <UserLocation enabled={locatedEvents.length === 0 && !pendingLocation} />}
 
-      {linePositions.length > 1 ? (
+      {compact || linePositions.length < 2 ? null : (
         <Polyline
           positions={linePositions}
           pathOptions={{
@@ -196,13 +214,25 @@ export default function ItineraryMap({
             opacity: 0.7,
           }}
         />
-      ) : null}
+      )}
 
-      {events.map((event, index) => (
+      {events.map((event, index) => {
+        if (!hasLocation(event)) {
+          return null
+        }
+
+        return (
         <Marker
           key={event.id}
+          ref={(marker) => {
+            if (marker) {
+              markerRefs.current.set(event.id, marker)
+            } else {
+              markerRefs.current.delete(event.id)
+            }
+          }}
           position={[event.lat, event.lng]}
-          icon={markerIcon(index + 1)}
+          icon={markerIcon(startIndex + index)}
           draggable={!readOnly}
           eventHandlers={{
             click: () => onSelectEvent(event.id),
@@ -212,29 +242,30 @@ export default function ItineraryMap({
             },
           }}
         >
-          <Popup>
-            <strong>{event.title || `Event ${index + 1}`}</strong>
-            {formatEventWindow(event) ? <div>{formatEventWindow(event)}</div> : null}
-            {event.notes.trim() ? <div>{event.notes}</div> : null}
-            {hrefFromLink(event.link) ? (
-              <div>
-                <a
-                  href={hrefFromLink(event.link)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {linkLabel(event.link)}
-                </a>
-              </div>
-            ) : null}
-          </Popup>
+          {compact ? null : (
+            <Popup>
+              <EventDetails event={event} index={startIndex + index} />
+            </Popup>
+          )}
         </Marker>
-      ))}
+        )
+      })}
 
       {pendingLocation ? (
         <Marker
           position={[pendingLocation.lat, pendingLocation.lng]}
-          icon={markerIcon(events.length + 1, true)}
+          icon={markerIcon(startIndex + events.length, true)}
+          draggable={!readOnly && Boolean(onMapClick)}
+          eventHandlers={
+            readOnly || !onMapClick
+              ? undefined
+              : {
+                  dragend: (markerEvent) => {
+                    const next = markerEvent.target.getLatLng()
+                    onMapClick(next.lat, next.lng)
+                  },
+                }
+          }
         />
       ) : null}
     </MapContainer>
