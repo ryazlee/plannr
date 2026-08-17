@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import AppHeader from '../AppHeader'
 import AddEventPanel from '../AddEventPanel'
 import DetailsPanel from '../DetailsPanel'
@@ -10,6 +10,8 @@ import SplitLayout from '../SplitLayout'
 import TimelinePanel from '../TimelinePanel'
 import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { useItinerary } from '../../hooks/useItinerary'
+import { formatDisplayDate } from '../../utils/itinerary'
+import { applyShareMeta } from '../../utils/shareMeta'
 import { createPreviewLocation } from '../../utils/urlState'
 import type { LatLng } from '../../types'
 
@@ -52,6 +54,10 @@ export default function PlannerScreen() {
   } = useItinerary()
   const isDesktop = useDesktopLayout()
   const [searchTarget, setSearchTarget] = useState<LatLng | null>(null)
+
+  useEffect(() => {
+    applyShareMeta(itinerary.title, formatDisplayDate(itinerary.date) || undefined)
+  }, [itinerary.title, itinerary.date])
 
   return (
     <div className="app-shell">

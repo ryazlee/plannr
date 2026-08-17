@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link2, Pencil } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
@@ -10,6 +10,7 @@ import SplitLayout from '../SplitLayout'
 import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
 import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/itinerary'
+import { applyShareMeta } from '../../utils/shareMeta'
 import { createEditorLocation, createPreviewUrl, hydrateState } from '../../utils/urlState'
 import { hasCalendarDate } from '../../utils/calendar'
 
@@ -26,6 +27,10 @@ export default function PreviewScreen() {
 
   const editorLocation = createEditorLocation(itinerary)
   const empty = isEmptyState(itinerary)
+
+  useEffect(() => {
+    applyShareMeta(itinerary.title, formatDisplayDate(itinerary.date) || undefined)
+  }, [itinerary.title, itinerary.date])
   const timeRange = formatTimeRange(itinerary.events)
   const eventLabel =
     itinerary.events.length === 0

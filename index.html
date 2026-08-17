@@ -3,18 +3,43 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#fafafa" />
-    <meta name="description" content="Plan a day out and share the itinerary with a link. No account required." />
-    <meta property="og:title" content="Plannr" />
-    <meta property="og:description" content="Plan a day out and share the itinerary with a link. No account required." />
+    <meta name="description" content="A shared day plan." />
+    <meta property="og:site_name" content="Plannr" />
+    <meta property="og:title" content="Shared plan" />
+    <meta property="og:description" content="A shared day plan." />
+    <meta property="og:image" content="https://ryazlee.github.io/plannr/favicon.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
     <meta property="og:url" content="https://ryazlee.github.io/plannr/" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="Plannr" />
-    <meta name="twitter:description" content="Plan a day out and share the itinerary with a link. No account required." />
+    <meta name="twitter:title" content="Shared plan" />
+    <meta name="twitter:description" content="A shared day plan." />
+    <meta name="twitter:image" content="https://ryazlee.github.io/plannr/favicon.png" />
     <title>Plannr</title>
+    <script>
+      try {
+        var parts = location.pathname.split('/').filter(Boolean)
+        var previewAt = parts.indexOf('preview')
+        if (previewAt >= 0 && previewAt < parts.length - 2) {
+          var slug = parts[previewAt + 1]
+          if (/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length <= 48) {
+            var title = slug.replace(/-/g, ' ')
+            title = title.charAt(0).toUpperCase() + title.slice(1)
+            document.title = title
+            var ogTitle = document.querySelector('meta[property="og:title"]')
+            if (ogTitle) ogTitle.setAttribute('content', title)
+            var twitterTitle = document.querySelector('meta[name="twitter:title"]')
+            if (twitterTitle) twitterTitle.setAttribute('content', title)
+          }
+        }
+      } catch (e) {}
+    </script>
     <script>
       try {
         var saved = localStorage.getItem('plannr-theme')
