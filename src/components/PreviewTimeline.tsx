@@ -3,27 +3,22 @@ import EventDetails from './EventDetails'
 import {
   effectiveEndTime,
   formatDuration,
-  formatEventWindow,
-  hasLocation,
-  hrefFromLink,
+  formatEventDuration,
+  formatTime,
   minutesBetween,
 } from '../utils/itinerary'
 import type { Event } from '../types'
 
 type PreviewTimelineProps = {
   events: Event[]
+  people: string[]
   focusedEventId: string | null
   onSelectEvent: (eventId: string) => void
 }
 
-function hasExtraDetails(event: Event): boolean {
-  return Boolean(
-    event.notes.trim() || event.people.length > 0 || hrefFromLink(event.link) || hasLocation(event),
-  )
-}
-
 export default function PreviewTimeline({
   events,
+  people,
   focusedEventId,
   onSelectEvent,
 }: PreviewTimelineProps) {
@@ -39,6 +34,7 @@ export default function PreviewTimeline({
           event={event}
           index={index}
           events={events}
+          people={people}
           selected={event.id === focusedEventId}
           onSelectEvent={onSelectEvent}
         />
@@ -51,12 +47,14 @@ function PreviewEventRow({
   event,
   index,
   events,
+  people,
   selected,
   onSelectEvent,
 }: {
   event: Event
   index: number
   events: Event[]
+  people: string[]
   selected: boolean
   onSelectEvent: (eventId: string) => void
 }) {
@@ -65,7 +63,10 @@ function PreviewEventRow({
   const previousEnd = previous ? effectiveEndTime(previous) : ''
   const gap =
     previous && event.startTime && previousEnd ? minutesBetween(previousEnd, event.startTime) : null
-  const windowLabel = formatEventWindow(event)
+  const startLabel = formatTime(event.startTime)
+  const endLabel = event.startTime ? formatTime(effectiveEndTime(event)) : formatTime(event.endTime)
+  const durationLabel = formatEventDuration(event)
+  const showEnd = Boolean(endLabel && endLabel !== startLabel)
 
   useEffect(() => {
     if (!selected) {
@@ -87,10 +88,14 @@ function PreviewEventRow({
           className={['preview-event', selected ? 'preview-event--active' : null]
             .filter(Boolean)
             .join(' ')}
-          aria-expanded={selected}
+          aria-pressed={selected}
           onClick={() => onSelectEvent(event.id)}
         >
-          <span className="preview-event__time">{windowLabel || '—'}</span>
+          <span className="preview-event__when">
+            <span className="preview-event__start">{startLabel || '—'}</span>
+            {showEnd ? <span className="preview-event__end">{endLabel}</span> : null}
+            {durationLabel ? <span className="preview-event__duration">{durationLabel}</span> : null}
+          </span>
           <span className="preview-event__index" aria-hidden="true">
             {index + 1}
           </span>
@@ -98,11 +103,16 @@ function PreviewEventRow({
             <span className="preview-event__title">{event.title || `Event ${index + 1}`}</span>
           </span>
         </button>
-        {selected && hasExtraDetails(event) ? (
-          <div className="preview-event__details">
-            <EventDetails event={event} index={index + 1} showHeading={false} />
-          </div>
-        ) : null}
+        <div
+          className="preview-event__details"
+          onClick={() => {
+            if (!selected) {
+              onSelectEvent(event.id)
+            }
+          }}
+        >
+          <EventDetails event={event} index={index + 1} showHeading={false} allPeople={people} />
+        </div>
       </div>
     </li>
   )

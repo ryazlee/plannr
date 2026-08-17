@@ -112,6 +112,7 @@ export default function PreviewScreen() {
       <div className="map-canvas map-canvas--readonly">
         <ItineraryMap
           events={itinerary.events}
+          people={itinerary.people}
           focusedEventId={focusedEventId}
           onSelectEvent={selectEvent}
           readOnly
@@ -122,13 +123,11 @@ export default function PreviewScreen() {
 
   const timeline = (
     <div className="preview-timeline">
-      <div className="surface-card">
-        <div className="surface-card__header">
-          <p className="section-label">Day</p>
-        </div>
+      <div className="surface-card preview-day">
         <div className="surface-card__body">
           <PreviewTimeline
             events={itinerary.events}
+            people={itinerary.people}
             focusedEventId={focusedEventId}
             onSelectEvent={toggleEvent}
           />

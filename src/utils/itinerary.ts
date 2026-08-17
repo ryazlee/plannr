@@ -275,6 +275,33 @@ export function formatDuration(minutes: number): string {
   return `${hours}h ${rest}m`
 }
 
+export function eventDurationMinutes(event: Pick<Event, 'startTime' | 'endTime'>): number | null {
+  if (!event.startTime) {
+    return null
+  }
+
+  return minutesBetween(event.startTime, effectiveEndTime(event))
+}
+
+export function formatEventDuration(event: Pick<Event, 'startTime' | 'endTime'>): string {
+  const minutes = eventDurationMinutes(event)
+  return minutes == null ? '' : formatDuration(minutes)
+}
+
+export function formatAssignedPeople(event: Pick<Event, 'people'>, allPeople: string[] = []): string {
+  if (event.people.length === 0) {
+    return ''
+  }
+
+  const roster = allPeople
+  const everyone =
+    roster.length > 1
+    && roster.every((person) => event.people.includes(person))
+    && event.people.length >= roster.length
+
+  return everyone ? 'Everyone' : event.people.join(' · ')
+}
+
 export function formatEventWindow(event: Event): string {
   if (!event.startTime) {
     return event.endTime ? formatTime(event.endTime) : ''

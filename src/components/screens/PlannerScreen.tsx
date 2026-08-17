@@ -82,6 +82,7 @@ export default function PlannerScreen() {
                   />
                   <ItineraryMap
                     events={itinerary.events}
+                    people={itinerary.people}
                     pendingLocation={pendingLocation}
                     focusedEventId={focusedEventId}
                     onMapClick={placeOnMap}

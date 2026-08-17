@@ -14,6 +14,7 @@ const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 
 type ItineraryMapProps = {
   events: Event[]
+  people?: string[]
   pendingLocation?: LatLng | null
   focusedEventId: string | null
   onMapClick?: (lat: number, lng: number) => void
@@ -156,6 +157,7 @@ function UserLocation({ enabled }: { enabled: boolean }) {
 
 export default function ItineraryMap({
   events,
+  people = [],
   pendingLocation = null,
   focusedEventId,
   onMapClick,
@@ -244,7 +246,7 @@ export default function ItineraryMap({
         >
           {compact ? null : (
             <Popup>
-              <EventDetails event={event} index={startIndex + index} />
+              <EventDetails event={event} index={startIndex + index} allPeople={people} />
             </Popup>
           )}
         </Marker>
