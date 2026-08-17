@@ -9,7 +9,16 @@ declare global {
 }
 
 function getPagePath(): string {
-  return window.location.pathname
+  const path = window.location.pathname
+  const previewAt = path.lastIndexOf('/preview')
+  if (previewAt !== -1) {
+    const after = path.slice(previewAt)
+    if (after === '/preview' || after.startsWith('/preview/')) {
+      return path.slice(0, previewAt + '/preview'.length)
+    }
+  }
+
+  return path
 }
 
 export function trackPageview(path = getPagePath()): void {

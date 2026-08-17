@@ -27,6 +27,8 @@ function App() {
         <RouteAnalytics />
         <Routes>
           <Route path="/" element={<PlannerScreen />} />
+          <Route path="/preview/:slug/:planToken" element={<PreviewScreen />} />
+          <Route path="/preview/:planToken" element={<PreviewScreen />} />
           <Route path="/preview" element={<PreviewScreen />} />
         </Routes>
       </BrowserRouter>

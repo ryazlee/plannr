@@ -1,26 +1,120 @@
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string'
+import {
+  compressToUint8Array,
+  decompressFromEncodedURIComponent,
+  decompressFromUint8Array,
+} from 'lz-string'
 import type { ItineraryState } from '../types'
 import { createEmptyState, isEmptyState, parseItineraryState, serializeItineraryState } from './itinerary'
 
 const PLAN_PARAM = 'plan'
 const LZ_PREFIX = 's:'
 const PLAN_STORAGE_KEY = 'plannr-plan'
+// Letters and numbers only — iOS Messages splits links on #, $, +, and similar punctuation.
+const PAYLOAD_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+const SLUG_MAX_LENGTH = 48
 
 function getAppRootPath(): string {
   const base = import.meta.env.BASE_URL
   return base.endsWith('/') ? base.slice(0, -1) : base
 }
 
+function getRelativePathname(pathname: string): string {
+  const root = getAppRootPath()
+  if (root && (pathname === root || pathname.startsWith(`${root}/`))) {
+    return pathname.slice(root.length) || '/'
+  }
+  return pathname
+}
+
+function isPreviewPath(pathname: string): boolean {
+  const relative = getRelativePathname(pathname)
+  return relative === '/preview' || relative.startsWith('/preview/')
+}
+
 function readRawHash(): string {
   return window.location.hash.replace(/^#/, '')
 }
 
-function decodePayload(encoded: string): ItineraryState | null {
-  if (!encoded) {
-    return null
+function slugify(title: string): string {
+  const slug = title
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, SLUG_MAX_LENGTH)
+    .replace(/-+$/, '')
+
+  return slug
+}
+
+function encodeBaseAlphabet(bytes: Uint8Array, alphabet: string): string {
+  if (bytes.length === 0) {
+    return ''
   }
 
-  const json = decompressFromEncodedURIComponent(encoded)
+  const base = BigInt(alphabet.length)
+  let leadingZeros = 0
+  for (const byte of bytes) {
+    if (byte !== 0) {
+      break
+    }
+    leadingZeros += 1
+  }
+
+  let value = 0n
+  for (const byte of bytes) {
+    value = (value << 8n) + BigInt(byte)
+  }
+
+  if (value === 0n) {
+    return alphabet[0].repeat(bytes.length)
+  }
+
+  let encoded = ''
+  while (value > 0n) {
+    encoded = alphabet[Number(value % base)] + encoded
+    value /= base
+  }
+
+  return alphabet[0].repeat(leadingZeros) + encoded
+}
+
+function decodeBaseAlphabet(encoded: string, alphabet: string): Uint8Array | null {
+  if (!encoded) {
+    return new Uint8Array()
+  }
+
+  const base = BigInt(alphabet.length)
+  const lookup = new Map([...alphabet].map((char, index) => [char, BigInt(index)]))
+
+  let leadingZeros = 0
+  for (const char of encoded) {
+    if (char !== alphabet[0]) {
+      break
+    }
+    leadingZeros += 1
+  }
+
+  let value = 0n
+  for (const char of encoded) {
+    const digit = lookup.get(char)
+    if (digit === undefined) {
+      return null
+    }
+    value = value * base + digit
+  }
+
+  const bytes: number[] = []
+  while (value > 0n) {
+    bytes.unshift(Number(value & 0xffn))
+    value >>= 8n
+  }
+
+  return Uint8Array.from(Array.from({ length: leadingZeros }, () => 0).concat(bytes))
+}
+
+function parseJsonState(json: string | null | undefined): ItineraryState | null {
   if (!json) {
     return null
   }
@@ -32,8 +126,79 @@ function decodePayload(encoded: string): ItineraryState | null {
   }
 }
 
-function hashFromEncoded(encoded: string): string {
-  return encoded ? `#${LZ_PREFIX}${encoded}` : ''
+function decodeLegacyPayload(encoded: string): ItineraryState | null {
+  return parseJsonState(decompressFromEncodedURIComponent(encoded))
+}
+
+function decodeCompactPayload(encoded: string): ItineraryState | null {
+  if (!encoded || /[^A-Za-z0-9]/.test(encoded)) {
+    return null
+  }
+
+  const bytes = decodeBaseAlphabet(encoded, PAYLOAD_ALPHABET)
+  if (!bytes || bytes.length === 0) {
+    return null
+  }
+
+  try {
+    return parseJsonState(decompressFromUint8Array(bytes))
+  } catch {
+    return null
+  }
+}
+
+function decodePayload(encoded: string): ItineraryState | null {
+  if (!encoded) {
+    return null
+  }
+
+  return decodeCompactPayload(encoded) ?? decodeLegacyPayload(encoded)
+}
+
+function extractPayload(raw: string): string {
+  if (!raw) {
+    return ''
+  }
+
+  if (raw.startsWith(LZ_PREFIX)) {
+    return raw.slice(LZ_PREFIX.length)
+  }
+
+  if (raw.startsWith(`${PLAN_PARAM}=`)) {
+    return raw.slice(`${PLAN_PARAM}=`.length)
+  }
+
+  const slash = raw.lastIndexOf('/')
+  if (slash !== -1) {
+    return raw.slice(slash + 1)
+  }
+
+  return raw
+}
+
+function readPathPayload(): string {
+  const relative = getRelativePathname(window.location.pathname)
+  if (!relative.startsWith('/preview/')) {
+    return ''
+  }
+
+  const rest = relative.slice('/preview/'.length).replace(/\/+$/, '')
+  const segments = rest.split('/').filter(Boolean)
+  return segments.at(-1) ?? ''
+}
+
+function previewRelativePath(state: ItineraryState): string {
+  const payload = encodeUrlState(state)
+  if (!payload) {
+    return '/preview'
+  }
+
+  const slug = slugify(state.title)
+  return slug ? `/preview/${slug}/${payload}` : `/preview/${payload}`
+}
+
+function previewPathname(state: ItineraryState): string {
+  return `${getAppRootPath()}${previewRelativePath(state)}`
 }
 
 export function encodeUrlState(state: ItineraryState): string {
@@ -41,23 +206,19 @@ export function encodeUrlState(state: ItineraryState): string {
     return ''
   }
 
-  return compressToEncodedURIComponent(JSON.stringify(serializeItineraryState(state)))
+  const json = JSON.stringify(serializeItineraryState(state))
+  return encodeBaseAlphabet(compressToUint8Array(json), PAYLOAD_ALPHABET)
 }
 
 export function readUrlState(): ItineraryState | null {
-  const rawHash = readRawHash()
-  if (rawHash.startsWith(LZ_PREFIX)) {
-    const fromHash = decodePayload(rawHash.slice(LZ_PREFIX.length))
-    if (fromHash) {
-      return fromHash
-    }
+  const fromPath = decodePayload(readPathPayload())
+  if (fromPath) {
+    return fromPath
   }
 
-  if (rawHash.startsWith(`${PLAN_PARAM}=`)) {
-    const fromHashPlan = decodePayload(rawHash.slice(`${PLAN_PARAM}=`.length))
-    if (fromHashPlan) {
-      return fromHashPlan
-    }
+  const fromHash = decodePayload(extractPayload(readRawHash()))
+  if (fromHash) {
+    return fromHash
   }
 
   const params = new URLSearchParams(window.location.search)
@@ -65,8 +226,11 @@ export function readUrlState(): ItineraryState | null {
 }
 
 function hasUrlPlanPayload(): boolean {
-  const rawHash = readRawHash()
-  if (rawHash.startsWith(LZ_PREFIX) || rawHash.startsWith(`${PLAN_PARAM}=`)) {
+  if (readPathPayload()) {
+    return true
+  }
+
+  if (readRawHash()) {
     return true
   }
 
@@ -107,10 +271,15 @@ export function writeUrlState(state: ItineraryState): void {
     writeStoredState(state)
   }
 
-  const encoded = encodeUrlState(state)
   const url = new URL(window.location.href)
   url.searchParams.delete(PLAN_PARAM)
-  url.hash = encoded ? `${LZ_PREFIX}${encoded}` : ''
+
+  if (isPreviewPath(url.pathname)) {
+    url.pathname = previewPathname(state)
+    url.hash = ''
+  } else {
+    url.hash = encodeUrlState(state)
+  }
 
   const next = `${url.pathname}${url.search}${url.hash}`
   const current = `${window.location.pathname}${window.location.search}${window.location.hash}`
@@ -145,11 +314,9 @@ export function hydrateState(): ItineraryState {
 
 export function createPreviewLocation(state: ItineraryState): {
   pathname: string
-  hash: string
 } {
   return {
-    pathname: '/preview',
-    hash: hashFromEncoded(encodeUrlState(state)),
+    pathname: previewRelativePath(state),
   }
 }
 
@@ -157,13 +324,13 @@ export function createEditorLocation(state: ItineraryState): {
   pathname: string
   hash: string
 } {
+  const encoded = encodeUrlState(state)
   return {
     pathname: '/',
-    hash: hashFromEncoded(encodeUrlState(state)),
+    hash: encoded ? `#${encoded}` : '',
   }
 }
 
 export function createPreviewUrl(state: ItineraryState): string {
-  const root = getAppRootPath()
-  return `${window.location.origin}${root}/preview${hashFromEncoded(encodeUrlState(state))}`
+  return `${window.location.origin}${previewPathname(state)}`
 }
