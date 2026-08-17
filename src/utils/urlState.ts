@@ -9,8 +9,10 @@ import { createEmptyState, isEmptyState, parseItineraryState, serializeItinerary
 const PLAN_PARAM = 'plan'
 const LZ_PREFIX = 's:'
 const PLAN_STORAGE_KEY = 'plannr-plan'
-// Letters and numbers only — iOS Messages splits links on #, $, +, and similar punctuation.
+// Letters and numbers only. iMessage/Signal drop a URL after 301 Base64-like
+// characters with no hyphen, so payloads are hyphenated every 64 chars.
 const PAYLOAD_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+const PAYLOAD_GROUP_SIZE = 64
 const SLUG_MAX_LENGTH = 48
 
 function getAppRootPath(): string {
@@ -33,6 +35,18 @@ function isPreviewPath(pathname: string): boolean {
 
 function readRawHash(): string {
   return window.location.hash.replace(/^#/, '')
+}
+
+function hyphenatePayload(payload: string): string {
+  if (payload.length <= PAYLOAD_GROUP_SIZE) {
+    return payload
+  }
+
+  const groups: string[] = []
+  for (let index = 0; index < payload.length; index += PAYLOAD_GROUP_SIZE) {
+    groups.push(payload.slice(index, index + PAYLOAD_GROUP_SIZE))
+  }
+  return groups.join('-')
 }
 
 function slugify(title: string): string {
@@ -152,7 +166,7 @@ function decodePayload(encoded: string): ItineraryState | null {
     return null
   }
 
-  return decodeCompactPayload(encoded) ?? decodeLegacyPayload(encoded)
+  return decodeCompactPayload(encoded.replace(/-/g, '')) ?? decodeLegacyPayload(encoded)
 }
 
 function extractPayload(raw: string): string {
@@ -188,7 +202,7 @@ function readPathPayload(): string {
 }
 
 function previewRelativePath(state: ItineraryState): string {
-  const payload = encodeUrlState(state)
+  const payload = hyphenatePayload(encodeUrlState(state))
   if (!payload) {
     return '/preview'
   }
@@ -278,7 +292,7 @@ export function writeUrlState(state: ItineraryState): void {
     url.pathname = previewPathname(state)
     url.hash = ''
   } else {
-    url.hash = encodeUrlState(state)
+    url.hash = hyphenatePayload(encodeUrlState(state))
   }
 
   const next = `${url.pathname}${url.search}${url.hash}`
@@ -324,7 +338,7 @@ export function createEditorLocation(state: ItineraryState): {
   pathname: string
   hash: string
 } {
-  const encoded = encodeUrlState(state)
+  const encoded = hyphenatePayload(encodeUrlState(state))
   return {
     pathname: '/',
     hash: encoded ? `#${encoded}` : '',
