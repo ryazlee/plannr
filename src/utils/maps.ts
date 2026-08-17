@@ -8,10 +8,10 @@ export function prefersAppleMaps(): boolean {
 
 export function mapsHref(lat: number, lng: number): string {
   if (prefersAppleMaps()) {
-    return `https://maps.apple.com/?ll=${lat},${lng}`
+    return `https://maps.apple.com/?daddr=${lat},${lng}`
   }
 
-  return `https://www.google.com/maps?q=${lat},${lng}`
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`
 }
 
 export function formatCoords(lat: number, lng: number): string {

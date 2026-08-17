@@ -152,15 +152,9 @@ export default function TimelinePanel({
                           />
                         </div>
                       ) : null}
+                      {located ? <MapsLink lat={event.lat} lng={event.lng} /> : null}
                     </div>
                   </div>
-                  {located ? (
-                    <p className="coords">
-                      <MapsLink lat={event.lat} lng={event.lng} className="coords__link">
-                        Maps
-                      </MapsLink>
-                    </p>
-                  ) : null}
                 </article>
               )
             })}

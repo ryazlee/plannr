@@ -722,15 +722,14 @@ textarea.input {
   font-variant-numeric: tabular-nums;
 }
 
-.coords__link {
-  color: inherit;
-  text-decoration: underline;
-  text-decoration-color: var(--border);
-  text-underline-offset: 2px;
+.directions-btn {
+  width: fit-content;
+  margin-top: 0.15rem;
+  gap: 0.4rem;
 }
 
-.coords__link:hover {
-  color: var(--text-secondary);
+.leaflet-popup-content .directions-btn {
+  margin-top: 0.35rem;
 }
 
 .icon-btn {
@@ -1156,6 +1155,7 @@ textarea.input {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
+  align-items: flex-start;
 }
 
 .event-details__title {

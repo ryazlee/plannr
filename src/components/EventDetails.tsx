@@ -67,15 +67,10 @@ export default function EventDetails({
       </a>,
     )
   }
-  if (located) {
-    links.push(
-      <MapsLink lat={event.lat} lng={event.lng}>
-        Maps
-      </MapsLink>,
-    )
-  }
 
-  if (!showHeading && !notes && summary.length === 0 && links.length === 0) {
+  const directions = located ? <MapsLink lat={event.lat} lng={event.lng} /> : null
+
+  if (!showHeading && !notes && summary.length === 0 && links.length === 0 && !directions) {
     return null
   }
 
@@ -94,6 +89,7 @@ export default function EventDetails({
       <MetaLine parts={summary} />
       {notes ? <p className="event-details__notes">{notes}</p> : null}
       <MetaLine parts={links} />
+      {directions}
     </div>
   )
 }
