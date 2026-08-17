@@ -1,10 +1,11 @@
-import { MapPin } from 'lucide-react'
+import { ExternalLink, MapPin } from 'lucide-react'
 import PeopleChips from './PeopleChips'
 import Button from './Button'
 import EventMiniMap from './EventMiniMap'
 import SectionCard from './SectionCard'
 import TimeFields from './TimeFields'
 import type { LatLng } from '../types'
+import { hrefFromLink } from '../utils/itinerary'
 
 type AddEventPanelProps = {
   startTime: string
@@ -51,6 +52,8 @@ export default function AddEventPanel({
   onPrepareNew,
   onPlacePin,
 }: AddEventPanelProps) {
+  const linkHref = hrefFromLink(link)
+
   return (
     <div className="planner-add">
       <SectionCard title="New event" plain>
@@ -88,15 +91,28 @@ export default function AddEventPanel({
 
           <label className="field">
             <span className="field__label">Link</span>
-            <input
-              className="input"
-              type="text"
-              inputMode="url"
-              value={link}
-              onChange={(event) => onLinkChange(event.target.value)}
-              onFocus={onPrepareNew}
-              placeholder="opentable.com/… (optional)"
-            />
+            <div className="input-with-action">
+              <input
+                className="input"
+                type="text"
+                inputMode="url"
+                value={link}
+                onChange={(event) => onLinkChange(event.target.value)}
+                onFocus={onPrepareNew}
+                placeholder="opentable.com/… (optional)"
+              />
+              {linkHref ? (
+                <a
+                  className="icon-btn icon-btn--link"
+                  href={linkHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open link"
+                >
+                  <ExternalLink size={16} aria-hidden="true" />
+                </a>
+              ) : null}
+            </div>
           </label>
 
           <PeopleChips

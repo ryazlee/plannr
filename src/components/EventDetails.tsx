@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ExternalLink } from 'lucide-react'
 import MapsLink from './MapsLink'
 import {
   formatAssignedPeople,
@@ -34,6 +35,29 @@ function MetaLine({ parts }: { parts: ReactNode[] }) {
   )
 }
 
+function EventLink({ value }: { value: string }) {
+  const href = hrefFromLink(value)
+  if (!href) {
+    return null
+  }
+
+  return (
+    <a
+      className="event-link"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={href}
+      onClick={(click) => click.stopPropagation()}
+    >
+      <span className="event-link__icon">
+        <ExternalLink size={14} aria-hidden="true" />
+      </span>
+      <span className="event-link__label">{linkLabel(value)}</span>
+    </a>
+  )
+}
+
 export default function EventDetails({
   event,
   index,
@@ -47,7 +71,6 @@ export default function EventDetails({
   const notes = event.notes.trim()
   const peopleLabel = formatAssignedPeople(event, allPeople)
   const summary: ReactNode[] = []
-  const links: ReactNode[] = []
 
   if (!showHeading && durationLabel) {
     summary.push(durationLabel)
@@ -55,22 +78,11 @@ export default function EventDetails({
   if (peopleLabel) {
     summary.push(peopleLabel)
   }
-  if (href) {
-    links.push(
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={(click) => click.stopPropagation()}
-      >
-        {linkLabel(event.link)}
-      </a>,
-    )
-  }
 
+  const eventLink = href ? <EventLink value={event.link} /> : null
   const directions = located ? <MapsLink lat={event.lat} lng={event.lng} /> : null
 
-  if (!showHeading && !notes && summary.length === 0 && links.length === 0 && !directions) {
+  if (!showHeading && !notes && summary.length === 0 && !eventLink && !directions) {
     return null
   }
 
@@ -88,8 +100,12 @@ export default function EventDetails({
       ) : null}
       <MetaLine parts={summary} />
       {notes ? <p className="event-details__notes">{notes}</p> : null}
-      <MetaLine parts={links} />
-      {directions}
+      {eventLink || directions ? (
+        <div className="event-details__actions">
+          {eventLink}
+          {directions}
+        </div>
+      ) : null}
     </div>
   )
 }

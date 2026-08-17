@@ -1,4 +1,4 @@
-import { Trash2 } from 'lucide-react'
+import { ExternalLink, Trash2 } from 'lucide-react'
 import EventMiniMap from './EventMiniMap'
 import MapSearch from './MapSearch'
 import MapsLink from './MapsLink'
@@ -6,7 +6,7 @@ import PeopleChips from './PeopleChips'
 import SectionCard from './SectionCard'
 import TimeFields from './TimeFields'
 import type { Event } from '../types'
-import { hasLocation } from '../utils/itinerary'
+import { hasLocation, hrefFromLink } from '../utils/itinerary'
 
 type TimelinePanelProps = {
   events: Event[]
@@ -48,6 +48,7 @@ export default function TimelinePanel({
               const selected = event.id === focusedEventId
               const located = hasLocation(event)
               const showMiniMap = showMaps && located
+              const eventHref = hrefFromLink(event.link)
 
               return (
                 <article
@@ -104,16 +105,30 @@ export default function TimelinePanel({
                         aria-label={`Event ${index + 1} notes`}
                         rows={2}
                       />
-                      <input
-                        className="input input--on-inset"
-                        type="text"
-                        inputMode="url"
-                        value={event.link}
-                        onChange={(change) => onUpdateEvent(event.id, 'link', change.target.value)}
-                        onFocus={() => onSelectEvent(event.id)}
-                        placeholder="Link (optional)"
-                        aria-label={`Event ${index + 1} link`}
-                      />
+                      <div className="input-with-action">
+                        <input
+                          className="input input--on-inset"
+                          type="text"
+                          inputMode="url"
+                          value={event.link}
+                          onChange={(change) => onUpdateEvent(event.id, 'link', change.target.value)}
+                          onFocus={() => onSelectEvent(event.id)}
+                          placeholder="Link (optional)"
+                          aria-label={`Event ${index + 1} link`}
+                        />
+                        {eventHref ? (
+                          <a
+                            className="icon-btn icon-btn--link"
+                            href={eventHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Open event ${index + 1} link`}
+                            onClick={(click) => click.stopPropagation()}
+                          >
+                            <ExternalLink size={16} aria-hidden="true" />
+                          </a>
+                        ) : null}
+                      </div>
                       <PeopleChips
                         people={people}
                         assigned={event.people}
