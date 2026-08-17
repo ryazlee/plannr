@@ -10,7 +10,6 @@ import SplitLayout from '../SplitLayout'
 import TimelinePanel from '../TimelinePanel'
 import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { useItinerary } from '../../hooks/useItinerary'
-import { hasLocation } from '../../utils/itinerary'
 import { createPreviewLocation } from '../../utils/urlState'
 import type { LatLng } from '../../types'
 
@@ -53,16 +52,10 @@ export default function PlannerScreen() {
   } = useItinerary()
   const isDesktop = useDesktopLayout()
   const [searchTarget, setSearchTarget] = useState<LatLng | null>(null)
-  const focusedEvent = itinerary.events.find((event) => event.id === focusedEventId)
-  const mapSubtitle = focusedEvent
-    ? hasLocation(focusedEvent)
-      ? `Selected: ${focusedEvent.title.trim() || 'event'} — drag the pin, or click / search to move it.`
-      : `Selected: ${focusedEvent.title.trim() || 'event'} — click or search the map to add a pin.`
-    : 'Search or click to place a pin — optional. Select an event to move its pin.'
 
   return (
     <div className="app-shell">
-      <AppHeader title="Plannr" mode="editing" />
+      <AppHeader title="Plannr" quiet />
       <main className="app-main">
         <div className="shell-inner">
           <SplitLayout
@@ -71,7 +64,7 @@ export default function PlannerScreen() {
             sidebarClassName="planner-sidebar"
             isDesktop={isDesktop}
             map={
-              <SectionCard className="map-card" title="Map" subtitle={mapSubtitle} noPadding>
+              <SectionCard className="map-card" noPadding>
                 <div className="map-canvas">
                   <MapSearch
                     onSelect={(place) => {

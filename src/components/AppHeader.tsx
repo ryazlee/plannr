@@ -3,25 +3,30 @@ import ThemeToggle from './ThemeToggle'
 type AppHeaderProps = {
   title: string
   subtitle?: string
-  mode: 'editing' | 'viewing'
+  mode?: 'editing' | 'viewing'
+  quiet?: boolean
 }
 
 export default function AppHeader({
   title,
-  subtitle = 'Plan a day, drop pins, share the link.',
+  subtitle,
   mode,
+  quiet = false,
 }: AppHeaderProps) {
-  const modeLabel = mode === 'editing' ? 'Editing' : 'Viewing'
+  const showMode = Boolean(mode) && !quiet
+  const showSubtitle = Boolean(subtitle) && !quiet
 
   return (
-    <header className="app-header">
+    <header className={['app-header', quiet ? 'app-header--quiet' : null].filter(Boolean).join(' ')}>
       <div className="app-header-inner">
         <div className="brand-block">
           <div className="brand-row">
             <h1 className="brand">{title}</h1>
-            <span className={`mode-tag mode-tag--${mode}`}>{modeLabel}</span>
+            {showMode ? (
+              <span className={`mode-tag mode-tag--${mode}`}>{mode === 'editing' ? 'Editing' : 'Viewing'}</span>
+            ) : null}
           </div>
-          {subtitle ? <p className="subtitle">{subtitle}</p> : null}
+          {showSubtitle ? <p className="subtitle">{subtitle}</p> : null}
         </div>
         <div className="header-actions">
           <ThemeToggle />

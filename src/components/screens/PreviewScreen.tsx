@@ -61,7 +61,7 @@ export default function PreviewScreen() {
   if (empty) {
     return (
       <div className="app-shell">
-        <AppHeader title="Plannr" subtitle="Shared itinerary" mode="viewing" />
+        <AppHeader title="Plannr" quiet />
         <main className="app-main">
           <div className="shell-inner">
             <div className="stack">
@@ -76,31 +76,34 @@ export default function PreviewScreen() {
 
   const hero = (
     <div className="preview-hero">
-      <h2 className="preview-title">{itinerary.title.trim() || 'Untitled plan'}</h2>
-      {subtitle ? <p className="preview-meta">{subtitle}</p> : null}
-
-      <div className="preview-toolbar">
-        <PreviewModeControl
-          mode={mode}
-          isDesktop={isDesktop}
-          onChange={setPreviewMode}
-          onAddDay={addDay}
-          onAddEachEvent={addEachEvent}
-        />
-        <Button
-          label="Copy link"
-          icon={<Link2 size={16} />}
-          size="sm"
-          variant="secondary"
-          onClick={copyShareLink}
-        />
-        <Button
-          label="Edit"
-          icon={<Pencil size={16} />}
-          size="sm"
-          variant="ghost"
-          to={editorLocation}
-        />
+      <div className="preview-hero__top">
+        <div className="preview-hero__copy">
+          <h2 className="preview-title">{itinerary.title.trim() || 'Untitled plan'}</h2>
+          {subtitle ? <p className="preview-meta">{subtitle}</p> : null}
+        </div>
+        <div className="preview-toolbar">
+          <PreviewModeControl
+            mode={mode}
+            isDesktop={isDesktop}
+            onChange={setPreviewMode}
+            onAddDay={addDay}
+            onAddEachEvent={addEachEvent}
+          />
+          <Button
+            label="Copy"
+            icon={<Link2 size={16} />}
+            size="sm"
+            variant="ghost"
+            onClick={copyShareLink}
+          />
+          <Button
+            label="Edit"
+            icon={<Pencil size={16} />}
+            size="sm"
+            variant="ghost"
+            to={editorLocation}
+          />
+        </div>
       </div>
 
       {notice ? <p className="notice">{notice}</p> : null}
@@ -123,22 +126,18 @@ export default function PreviewScreen() {
 
   const timeline = (
     <div className="preview-timeline">
-      <div className="surface-card preview-day">
-        <div className="surface-card__body">
-          <PreviewTimeline
-            events={itinerary.events}
-            people={itinerary.people}
-            focusedEventId={focusedEventId}
-            onSelectEvent={toggleEvent}
-          />
-        </div>
-      </div>
+      <PreviewTimeline
+        events={itinerary.events}
+        people={itinerary.people}
+        focusedEventId={focusedEventId}
+        onSelectEvent={toggleEvent}
+      />
     </div>
   )
 
   return (
     <div className="app-shell">
-      <AppHeader title="Plannr" subtitle="Shared itinerary" mode="viewing" />
+      <AppHeader title="Plannr" quiet />
       <main className="app-main">
         <div className="shell-inner">
           {mode === 'split' ? (

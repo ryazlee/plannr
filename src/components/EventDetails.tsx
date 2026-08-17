@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin, Users } from 'lucide-react'
+import type { ReactNode } from 'react'
 import MapsLink from './MapsLink'
 import {
   formatAssignedPeople,
@@ -17,6 +17,23 @@ type EventDetailsProps = {
   allPeople?: string[]
 }
 
+function MetaLine({ parts }: { parts: ReactNode[] }) {
+  if (parts.length === 0) {
+    return null
+  }
+
+  return (
+    <p className="event-details__line">
+      {parts.map((part, index) => (
+        <span key={index}>
+          {index > 0 ? <span aria-hidden="true"> · </span> : null}
+          {part}
+        </span>
+      ))}
+    </p>
+  )
+}
+
 export default function EventDetails({
   event,
   index,
@@ -29,8 +46,36 @@ export default function EventDetails({
   const located = hasLocation(event)
   const notes = event.notes.trim()
   const peopleLabel = formatAssignedPeople(event, allPeople)
+  const summary: ReactNode[] = []
+  const links: ReactNode[] = []
 
-  if (!showHeading && !notes && !peopleLabel && !href && !located) {
+  if (!showHeading && durationLabel) {
+    summary.push(durationLabel)
+  }
+  if (peopleLabel) {
+    summary.push(peopleLabel)
+  }
+  if (href) {
+    links.push(
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(click) => click.stopPropagation()}
+      >
+        {linkLabel(event.link)}
+      </a>,
+    )
+  }
+  if (located) {
+    links.push(
+      <MapsLink lat={event.lat} lng={event.lng}>
+        Maps
+      </MapsLink>,
+    )
+  }
+
+  if (!showHeading && !notes && summary.length === 0 && links.length === 0) {
     return null
   }
 
@@ -46,35 +91,9 @@ export default function EventDetails({
           ) : null}
         </>
       ) : null}
+      <MetaLine parts={summary} />
       {notes ? <p className="event-details__notes">{notes}</p> : null}
-      {peopleLabel || href || located ? (
-        <div className="event-details__meta">
-          {peopleLabel ? (
-            <p className="event-details__row">
-              <Users size={14} aria-hidden="true" />
-              <span>{peopleLabel}</span>
-            </p>
-          ) : null}
-          {href ? (
-            <a
-              className="event-details__row event-details__row--link"
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(click) => click.stopPropagation()}
-            >
-              <ExternalLink size={14} aria-hidden="true" />
-              <span>{linkLabel(event.link)}</span>
-            </a>
-          ) : null}
-          {located ? (
-            <MapsLink lat={event.lat} lng={event.lng} className="event-details__row event-details__row--link">
-              <MapPin size={14} aria-hidden="true" />
-              <span>Open in Maps</span>
-            </MapsLink>
-          ) : null}
-        </div>
-      ) : null}
+      <MetaLine parts={links} />
     </div>
   )
 }

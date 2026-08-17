@@ -2,7 +2,6 @@ import { Eye, Link2 } from 'lucide-react'
 import type { To } from 'react-router-dom'
 import Button from './Button'
 import SectionCard from './SectionCard'
-import { formatDisplayDate } from '../utils/itinerary'
 
 type DetailsPanelProps = {
   title: string
@@ -27,11 +26,9 @@ export default function DetailsPanel({
   onCopyShareLink,
   onClearPlan,
 }: DetailsPanelProps) {
-  const subtitle = date ? formatDisplayDate(date) : 'Date lives in the URL — no account needed.'
-
   return (
     <div className="planner-details">
-      <SectionCard title="Plan" subtitle={subtitle}>
+      <SectionCard title="Plan" plain>
         <div className="stack">
           <label className="field">
             <span className="field__label">Title</span>
@@ -57,12 +54,13 @@ export default function DetailsPanel({
             <Button
               label="Copy link"
               icon={<Link2 size={16} />}
+              variant="secondary"
               onClick={onCopyShareLink}
             />
             <Button
               label="Preview"
               icon={<Eye size={16} />}
-              variant="secondary"
+              variant="ghost"
               to={previewLocation}
             />
           </div>

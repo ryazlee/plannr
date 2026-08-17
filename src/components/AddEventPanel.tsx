@@ -51,13 +51,9 @@ export default function AddEventPanel({
   onPrepareNew,
   onPlacePin,
 }: AddEventPanelProps) {
-  const coords = pendingLocation
-    ? `Pin ready · ${pendingLocation.lat.toFixed(4)}, ${pendingLocation.lng.toFixed(4)}`
-    : 'A map pin is optional'
-
   return (
     <div className="planner-add">
-      <SectionCard title="New event" subtitle={coords}>
+      <SectionCard title="New event" plain>
         <div className="stack">
           <label className="field">
             <span className="field__label">Title</span>

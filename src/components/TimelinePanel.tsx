@@ -7,7 +7,6 @@ import SectionCard from './SectionCard'
 import TimeFields from './TimeFields'
 import type { Event } from '../types'
 import { hasLocation } from '../utils/itinerary'
-import { formatCoords } from '../utils/maps'
 
 type TimelinePanelProps = {
   events: Event[]
@@ -40,14 +39,7 @@ export default function TimelinePanel({
 }: TimelinePanelProps) {
   return (
     <div className="planner-timeline">
-      <SectionCard
-        title="Timeline"
-        subtitle={
-          events.length === 0
-            ? 'Events show up here in chronological order.'
-            : `${events.length} event${events.length === 1 ? '' : 's'}`
-        }
-      >
+      <SectionCard title="Timeline" plain>
         {events.length === 0 ? (
           <p className="empty-hint">Add a title to create an event. A map pin is optional.</p>
         ) : (
@@ -162,24 +154,13 @@ export default function TimelinePanel({
                       ) : null}
                     </div>
                   </div>
-                  <p className="coords">
-                    {hasLocation(event) ? (
-                      <>
-                        {selected
-                          ? showMaps
-                            ? 'Selected · drag the pin or search to move it · '
-                            : 'Selected · drag the pin, or click / search the map to move it · '
-                          : ''}
-                        <MapsLink lat={event.lat} lng={event.lng} className="coords__link">
-                          {formatCoords(event.lat, event.lng)}
-                        </MapsLink>
-                      </>
-                    ) : selected ? (
-                      'Selected · click or search the map to add a pin'
-                    ) : (
-                      'No location'
-                    )}
-                  </p>
+                  {located ? (
+                    <p className="coords">
+                      <MapsLink lat={event.lat} lng={event.lng} className="coords__link">
+                        Maps
+                      </MapsLink>
+                    </p>
+                  ) : null}
                 </article>
               )
             })}

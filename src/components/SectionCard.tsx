@@ -6,6 +6,7 @@ type SectionCardProps = {
   children: ReactNode
   className?: string
   noPadding?: boolean
+  plain?: boolean
 }
 
 export default function SectionCard({
@@ -14,9 +15,14 @@ export default function SectionCard({
   children,
   className,
   noPadding,
+  plain,
 }: SectionCardProps) {
   return (
-    <section className={['surface-card', className].filter(Boolean).join(' ')}>
+    <section
+      className={['surface-card', plain ? 'surface-card--plain' : null, className]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {title ? (
         <div className="surface-card__header">
           <p className="section-label">{title}</p>

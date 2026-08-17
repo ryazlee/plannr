@@ -18,7 +18,7 @@ export default function PeoplePanel({
 }: PeoplePanelProps) {
   return (
     <div className="planner-people">
-      <SectionCard title="People" subtitle="Tap a name to remove them from the plan.">
+      <SectionCard title="People" plain>
         <div className="stack">
           <div className="chip-row">
             {people.length > 0 ? (
