@@ -56,9 +56,12 @@ export default function HomeScreen() {
       <main className="app-main">
         <div className="shell-inner">
           <div className="home">
-            <p className="home__lede">
-              Build a day plan with a timeline and a map. Share a view-only link when you’re ready.
-            </p>
+            <div className="home__copy">
+              <p className="home__lede">
+                Build a day plan with a timeline and a map. Share a view-only link when you’re ready.
+              </p>
+              <p className="home__note">No accounts, no ads, all free.</p>
+            </div>
 
             {saved ? (
               <Link className="home__saved" to="/edit">
