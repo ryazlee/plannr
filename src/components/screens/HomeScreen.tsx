@@ -4,7 +4,7 @@ import AppHeader from '../AppHeader'
 import Button from '../Button'
 import { formatDisplayDate, formatTimeRange } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { hasUrlPlanPayload, readSavedPlan } from '../../utils/urlState'
+import { hasUrlPlanPayload, readSavedPlan, createNewPlanLocation } from '../../utils/urlState'
 
 export default function HomeScreen() {
   const navigate = useNavigate()
@@ -71,7 +71,14 @@ export default function HomeScreen() {
               </Link>
             ) : null}
 
-            <Button label={saved ? 'Continue plan' : 'Start a plan'} to="/edit" />
+            <div className="home__actions">
+              {saved ? <Button label="Continue plan" to="/edit" /> : null}
+              <Button
+                label={saved ? 'Start a new plan' : 'Start a plan'}
+                variant={saved ? 'secondary' : 'primary'}
+                to={saved ? createNewPlanLocation() : '/edit'}
+              />
+            </div>
           </div>
         </div>
       </main>

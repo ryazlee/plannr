@@ -259,8 +259,17 @@ a {
   color: var(--text-muted);
 }
 
-.home .btn {
-  min-width: 12.5rem;
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.home__actions .btn {
+  width: 100%;
+  min-width: 0;
 }
 
 .app-shell--home .app-main {

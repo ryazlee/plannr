@@ -7,6 +7,7 @@ import type { ItineraryState } from '../types'
 import { createEmptyState, isEmptyState, parseItineraryState, serializeItineraryState } from './itinerary'
 
 const PLAN_PARAM = 'plan'
+const NEW_PLAN_PARAM = 'new'
 const LZ_PREFIX = 's:'
 const PLAN_STORAGE_KEY = 'plannr-plan'
 // Letters and numbers only. iMessage/Signal drop a URL after 301 Base64-like
@@ -310,6 +311,7 @@ export function writeUrlState(state: ItineraryState): void {
 
   const url = new URL(window.location.href)
   url.searchParams.delete(PLAN_PARAM)
+  url.searchParams.delete(NEW_PLAN_PARAM)
 
   if (isViewPath(url.pathname)) {
     url.pathname = viewPathname(state)
@@ -328,6 +330,11 @@ export function writeUrlState(state: ItineraryState): void {
 }
 
 export function hydrateState(): ItineraryState {
+  if (new URLSearchParams(window.location.search).has(NEW_PLAN_PARAM)) {
+    writeUrlState(createEmptyState())
+    return createEmptyState()
+  }
+
   const fromUrl = readUrlState()
   if (fromUrl) {
     writeUrlState(fromUrl)
@@ -354,6 +361,16 @@ export function createViewLocation(state: ItineraryState): {
 } {
   return {
     pathname: viewRelativePath(state),
+  }
+}
+
+export function createNewPlanLocation(): {
+  pathname: string
+  search: string
+} {
+  return {
+    pathname: '/edit',
+    search: `?${NEW_PLAN_PARAM}=1`,
   }
 }
 
