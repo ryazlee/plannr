@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet'
 import { DomEvent, divIcon, latLngBounds, type Map as LeafletMap, type Marker as LeafletMarker } from 'leaflet'
-import { Scan } from 'lucide-react'
+import { Scan, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Event, LatLng } from '../types'
 import { hasLocation } from '../utils/itinerary'
 import { useTheme } from '../theme'
@@ -14,8 +14,8 @@ const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.pn
 const LIGHT_ATTR = '&copy; OpenStreetMap'
 const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const ROUTE_STYLE = {
-  light: { line: '#2563eb', glow: '#2563eb' },
-  dark: { line: '#60a5fa', glow: '#60a5fa' },
+  light: { line: '#3c6fe0', halo: '#ffffff' },
+  dark: { line: '#8cb4ff', halo: '#0b1220' },
 } as const
 
 type MapPoint = [number, number]
@@ -41,36 +41,41 @@ function isSamePoint(from: MapPoint, to: MapPoint): boolean {
   return dLat * dLat + dLng * dLng < 1e-12
 }
 
-function bezierPoint(start: MapPoint, control: MapPoint, end: MapPoint, t: number): MapPoint {
+function cubicPoint(start: MapPoint, c1: MapPoint, c2: MapPoint, end: MapPoint, t: number): MapPoint {
   const inverse = 1 - t
+  const i2 = inverse * inverse
+  const t2 = t * t
   return [
-    inverse * inverse * start[0] + 2 * inverse * t * control[0] + t * t * end[0],
-    inverse * inverse * start[1] + 2 * inverse * t * control[1] + t * t * end[1],
+    i2 * inverse * start[0] + 3 * i2 * t * c1[0] + 3 * inverse * t2 * c2[0] + t2 * t * end[0],
+    i2 * inverse * start[1] + 3 * i2 * t * c1[1] + 3 * inverse * t2 * c2[1] + t2 * t * end[1],
   ]
 }
 
-function curveControl(from: MapPoint, to: MapPoint, sign: 1 | -1): MapPoint {
+function curveControls(from: MapPoint, to: MapPoint): [MapPoint, MapPoint] {
   const latScale = Math.max(Math.cos(((from[0] + to[0]) / 2) * (Math.PI / 180)), 0.2)
   const north = to[0] - from[0]
   const east = (to[1] - from[1]) * latScale
   const dist = Math.hypot(east, north)
   if (dist < 1e-8) {
-    return interpolate(from, to, 0.5)
+    const mid = interpolate(from, to, 0.5)
+    return [mid, mid]
   }
 
-  const bulge = dist * 0.2
+  const bulge = Math.min(dist * 0.12, 0.02)
+  const offsetLat = (east / dist) * bulge
+  const offsetLng = ((-north / dist) * bulge) / latScale
   return [
-    (from[0] + to[0]) / 2 + (east / dist) * bulge * sign,
-    (from[1] + to[1]) / 2 + (-north / dist) * bulge * sign / latScale,
+    [from[0] + north / 3 + offsetLat, from[1] + (to[1] - from[1]) / 3 + offsetLng],
+    [from[0] + (2 * north) / 3 + offsetLat, from[1] + (2 * (to[1] - from[1])) / 3 + offsetLng],
   ]
 }
 
-function curvePoints(from: MapPoint, control: MapPoint, to: MapPoint): MapPoint[] {
+function curvePoints(from: MapPoint, c1: MapPoint, c2: MapPoint, to: MapPoint): MapPoint[] {
   const dist = Math.hypot(to[0] - from[0], to[1] - from[1])
-  const steps = Math.max(10, Math.min(28, Math.round(dist * 1400)))
+  const steps = Math.max(14, Math.min(40, Math.round(dist * 1800)))
   const points: MapPoint[] = []
   for (let i = 0; i <= steps; i += 1) {
-    points.push(bezierPoint(from, control, to, i / steps))
+    points.push(cubicPoint(from, c1, c2, to, i / steps))
   }
   return points
 }
@@ -113,9 +118,9 @@ function markerIcon(index: number, pending = false, focused = false) {
 function arrowIcon(bearing: number) {
   return divIcon({
     className: 'route-arrow-wrap',
-    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 16 12 9 17 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
+    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5 18 16.5 12 13.8 6 16.5Z"/></svg></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
   })
 }
 
@@ -132,20 +137,20 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         continue
       }
 
-      const control = curveControl(from, to, i % 2 === 0 ? 1 : -1)
-      const curved = curvePoints(from, control, to)
+      const [c1, c2] = curveControls(from, to)
+      const curved = curvePoints(from, c1, c2, to)
       if (line.length > 0) {
         curved.shift()
       }
       line.push(...curved)
 
       const dist2 = (to[0] - from[0]) ** 2 + (to[1] - from[1]) ** 2
-      const stops = dist2 > 0.0002 ? [0.38, 0.72] : [0.58]
-      for (const t of stops) {
-        const before = bezierPoint(from, control, to, Math.max(0, t - 0.04))
-        const after = bezierPoint(from, control, to, Math.min(1, t + 0.04))
+      if (dist2 > 4e-8) {
+        const t = 0.54
+        const before = cubicPoint(from, c1, c2, to, t - 0.05)
+        const after = cubicPoint(from, c1, c2, to, t + 0.05)
         arrows.push({
-          position: bezierPoint(from, control, to, t),
+          position: cubicPoint(from, c1, c2, to, t),
           bearing: segmentBearing(before, after),
         })
       }
@@ -170,9 +175,9 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         interactive={false}
         pathOptions={{
           ...lineOptions,
-          color: colors.glow,
-          weight: 8,
-          opacity: 0.22,
+          color: colors.halo,
+          weight: 6,
+          opacity: 0.86,
         }}
       />
       <Polyline
@@ -181,8 +186,8 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         pathOptions={{
           ...lineOptions,
           color: colors.line,
-          weight: 3.25,
-          opacity: 0.88,
+          weight: 2.4,
+          opacity: 0.92,
         }}
       />
       {route.arrows.map((arrow) => (
@@ -196,6 +201,56 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         />
       ))}
     </>
+  )
+}
+
+function MapEventPopup({
+  event,
+  index,
+  people,
+  canStep,
+  onPrevious,
+  onNext,
+}: {
+  event: Event
+  index: number
+  people: string[]
+  canStep: boolean
+  onPrevious: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className="map-popup">
+      <EventDetails event={event} index={index} allPeople={people} />
+      {canStep ? (
+        <div className="map-popup__nav">
+          <button
+            type="button"
+            className="map-popup__step"
+            aria-label="Previous event"
+            onClick={(click) => {
+              click.preventDefault()
+              click.stopPropagation()
+              onPrevious()
+            }}
+          >
+            <ChevronLeft size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="map-popup__step"
+            aria-label="Next event"
+            onClick={(click) => {
+              click.preventDefault()
+              click.stopPropagation()
+              onNext()
+            }}
+          >
+            <ChevronRight size={16} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null}
+    </div>
   )
 }
 
@@ -424,6 +479,23 @@ export default function ItineraryMap({
     : pendingLocation
       ? [pendingLocation.lat, pendingLocation.lng]
       : FALLBACK_CENTER
+  const canStep = locatedEvents.length > 1
+
+  function showLocatedEvent(eventId: string) {
+    onSelectEvent(eventId)
+    window.requestAnimationFrame(() => {
+      markerRefs.current.get(eventId)?.openPopup()
+    })
+  }
+
+  function stepFrom(eventId: string, delta: number) {
+    const current = locatedEvents.findIndex((event) => event.id === eventId)
+    if (current < 0) {
+      return
+    }
+    const next = locatedEvents[(current + delta + locatedEvents.length) % locatedEvents.length]
+    showLocatedEvent(next.id)
+  }
 
   useEffect(() => {
     if (!readOnly || compact || !focusedEventId) {
@@ -483,7 +555,14 @@ export default function ItineraryMap({
         >
           {compact ? null : (
             <Popup>
-              <EventDetails event={event} index={startIndex + index} allPeople={people} />
+              <MapEventPopup
+                event={event}
+                index={startIndex + index}
+                people={people}
+                canStep={canStep}
+                onPrevious={() => stepFrom(event.id, -1)}
+                onNext={() => stepFrom(event.id, 1)}
+              />
             </Popup>
           )}
         </Marker>

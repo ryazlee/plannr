@@ -372,10 +372,10 @@ a {
 
 .section-label {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: -0.01em;
+  color: var(--text);
+  letter-spacing: -0.02em;
 }
 
 .surface-card {
@@ -391,7 +391,7 @@ a {
 }
 
 .surface-card--plain .surface-card__header {
-  padding: 0 0 0.45rem;
+  padding: 0 0 0.5rem;
 }
 
 .surface-card--plain .surface-card__body {
@@ -531,9 +531,11 @@ a {
 
 .field__label {
   display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.8125rem;
+  margin-bottom: 0.28rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: var(--text-muted);
+  letter-spacing: 0.01em;
 }
 
 .input {
@@ -613,11 +615,21 @@ textarea.input {
 .stack {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.7rem;
 }
 
 .stack--tight {
   gap: 0.4rem;
+}
+
+.form-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.stack:has(> .form-cluster) {
+  gap: 1rem;
 }
 
 .theme-toggle,
@@ -659,7 +671,7 @@ textarea.input {
 
 .planner-layout {
   display: grid;
-  gap: 1.25rem;
+  gap: 1.35rem;
   grid-template-areas:
     'details'
     'people'
@@ -868,18 +880,21 @@ textarea.input {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
-  color: #2563eb;
+  width: 16px;
+  height: 16px;
+  color: #3c6fe0;
+  filter: drop-shadow(0 0 0.6px #fff) drop-shadow(0 1px 0.4px color-mix(in srgb, #0b1220 25%, transparent));
 }
 
 html.theme-dark .route-arrow {
-  color: #60a5fa;
+  color: #8cb4ff;
+  filter: drop-shadow(0 0 0.6px #0b1220) drop-shadow(0 1px 0.4px color-mix(in srgb, #0b1220 55%, transparent));
 }
 
 .route-arrow svg {
-  width: 14px;
-  height: 14px;
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
 }
 
 .event-card.inset-block {
@@ -923,7 +938,7 @@ html.theme-dark .route-arrow {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
 .event-card__title-row {
@@ -1580,6 +1595,43 @@ a.event-details__place:hover {
   margin: 0;
 }
 
+.map-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.map-popup__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 -0.25rem -0.15rem;
+}
+
+.map-popup__step {
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.map-popup__step:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.map-popup__step:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .preview-rail {
   --preview-time: 4.5rem;
   --preview-track: 1.35rem;
@@ -1898,7 +1950,7 @@ body.is-resizing .leaflet-container {
   .split-layout .preview-sidebar {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 1.35rem;
     flex: 1 1 auto;
     min-width: 20rem;
     min-height: 0;

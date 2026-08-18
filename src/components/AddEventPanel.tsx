@@ -56,86 +56,96 @@ export default function AddEventPanel({
     <div className="planner-add">
       <SectionCard title="New event" plain>
         <div className="stack">
-          <label className="field">
-            <span className="field__label">Title</span>
-            <input
-              className="input"
-              value={title}
-              onChange={(event) => onTitleChange(event.target.value)}
-              onFocus={onPrepareNew}
-              placeholder="Coffee, walk, dinner…"
-            />
-          </label>
-
-          <TimeFields
-            startTime={startTime}
-            endTime={endTime}
-            onStartChange={onStartTimeChange}
-            onEndChange={onEndTimeChange}
-            onFocus={onPrepareNew}
-          />
-
-          <label className="field">
-            <span className="field__label">Notes</span>
-            <textarea
-              className="input input--notes"
-              value={notes}
-              onChange={(event) => onNotesChange(event.target.value)}
-              onFocus={onPrepareNew}
-              placeholder="Reservation, dress code, what to order…"
-              rows={2}
-            />
-          </label>
-
-          <label className="field">
-            <span className="field__label">Link</span>
-            <div className="input-with-action">
+          <div className="form-cluster">
+            <label className="field">
+              <span className="field__label">Title</span>
               <input
                 className="input"
-                type="text"
-                inputMode="url"
-                value={link}
-                onChange={(event) => onLinkChange(event.target.value)}
+                value={title}
+                onChange={(event) => onTitleChange(event.target.value)}
                 onFocus={onPrepareNew}
-                placeholder="opentable.com/…"
+                placeholder="Coffee, walk, dinner…"
               />
-              {linkHref ? (
-                <a
-                  className="icon-btn icon-btn--link"
-                  href={linkHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open link"
-                >
-                  <ExternalLink size={16} aria-hidden="true" />
-                </a>
-              ) : null}
-            </div>
-          </label>
+            </label>
 
-          <PeopleChips
-            people={people}
-            assigned={assigned}
-            onTogglePerson={onTogglePerson}
-          />
+            <TimeFields
+              startTime={startTime}
+              endTime={endTime}
+              onStartChange={onStartTimeChange}
+              onEndChange={onEndTimeChange}
+              onFocus={onPrepareNew}
+            />
+          </div>
+
+          <div className="form-cluster">
+            <label className="field">
+              <span className="field__label">Notes</span>
+              <textarea
+                className="input input--notes"
+                value={notes}
+                onChange={(event) => onNotesChange(event.target.value)}
+                onFocus={onPrepareNew}
+                placeholder="Reservation, dress code, what to order…"
+                rows={2}
+              />
+            </label>
+
+            <label className="field">
+              <span className="field__label">Link</span>
+              <div className="input-with-action">
+                <input
+                  className="input"
+                  type="text"
+                  inputMode="url"
+                  value={link}
+                  onChange={(event) => onLinkChange(event.target.value)}
+                  onFocus={onPrepareNew}
+                  placeholder="opentable.com/…"
+                />
+                {linkHref ? (
+                  <a
+                    className="icon-btn icon-btn--link"
+                    href={linkHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open link"
+                  >
+                    <ExternalLink size={16} aria-hidden="true" />
+                  </a>
+                ) : null}
+              </div>
+            </label>
+          </div>
+
+          {people.length > 0 ? (
+            <div className="form-cluster">
+              <PeopleChips
+                people={people}
+                assigned={assigned}
+                onTogglePerson={onTogglePerson}
+              />
+            </div>
+          ) : null}
 
           {showMap ? (
-            <EventMiniMap
-              events={[]}
-              pendingLocation={pendingLocation}
-              focusedEventId={null}
-              startIndex={nextIndex}
-              showSearch
-              onSelectEvent={() => onPrepareNew?.()}
-              onMapClick={(lat, lng) => {
-                onPrepareNew?.()
-                onPlacePin(lat, lng)
-              }}
-              onSearchSelect={(lat, lng, place) => {
-                onPrepareNew?.()
-                onPlacePin(lat, lng, place)
-              }}
-            />
+            <div className="form-cluster">
+              <EventMiniMap
+                events={[]}
+                pendingLocation={pendingLocation}
+                focusedEventId={null}
+                startIndex={nextIndex}
+                showSearch
+                onSelectEvent={() => onPrepareNew?.()}
+                onMapClick={(lat, lng) => {
+                  onPrepareNew?.()
+                  onPlacePin(lat, lng)
+                }}
+                onSearchSelect={(lat, lng, place) => {
+                  onPrepareNew?.()
+                  onPlacePin(lat, lng, place)
+                }}
+              />
+            </div>
           ) : null}
 
           <Button
