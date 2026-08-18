@@ -38,7 +38,7 @@ export default function TimelinePanel({
     <div className="planner-timeline">
       <SectionCard title="Timeline" plain>
         {events.length === 0 ? (
-          <p className="empty-hint">Add a title to create an event. A map pin is optional.</p>
+          <p className="empty-hint">No events yet.</p>
         ) : (
           <div className="stack stack--tight">
             {events.map((event, index) => {
@@ -110,7 +110,7 @@ export default function TimelinePanel({
                           value={event.link}
                           onChange={(change) => onUpdateEvent(event.id, 'link', change.target.value)}
                           onFocus={() => onSelectEvent(event.id)}
-                          placeholder="Link (optional)"
+                          placeholder="Link"
                           aria-label={`Event ${index + 1} link`}
                         />
                         {eventHref ? (

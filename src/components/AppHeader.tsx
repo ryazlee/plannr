@@ -23,7 +23,16 @@ export default function AppHeader({
         <div className="brand-block">
           <div className="brand-row">
             <h1 className="brand">
-              <Link to="/">{title}</Link>
+              <Link to="/">
+                <img
+                  className="brand__mark"
+                  src={`${import.meta.env.BASE_URL}favicon.png`}
+                  alt=""
+                  width={24}
+                  height={24}
+                />
+                <span>{title}</span>
+              </Link>
             </h1>
             {showMode ? (
               <span className={`mode-tag mode-tag--${mode}`}>{mode === 'editing' ? 'Edit' : 'View'}</span>

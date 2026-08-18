@@ -1,4 +1,4 @@
-import { ExternalLink, MapPin } from 'lucide-react'
+import { ExternalLink, Plus } from 'lucide-react'
 import PeopleChips from './PeopleChips'
 import Button from './Button'
 import EventMiniMap from './EventMiniMap'
@@ -97,7 +97,7 @@ export default function AddEventPanel({
                 value={link}
                 onChange={(event) => onLinkChange(event.target.value)}
                 onFocus={onPrepareNew}
-                placeholder="opentable.com/… (optional)"
+                placeholder="opentable.com/…"
               />
               {linkHref ? (
                 <a
@@ -140,7 +140,7 @@ export default function AddEventPanel({
 
           <Button
             label="Add event"
-            icon={<MapPin size={16} />}
+            icon={<Plus size={16} />}
             variant={title.trim() ? 'primary' : 'secondary'}
             block
             onClick={onAddEvent}

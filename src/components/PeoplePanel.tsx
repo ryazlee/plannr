@@ -34,7 +34,7 @@ export default function PeoplePanel({
                 </button>
               ))
             ) : (
-              <p className="empty-hint">Add who’s coming. New events include everyone by default.</p>
+              <p className="empty-hint">Add who’s coming.</p>
             )}
           </div>
 
@@ -50,6 +50,7 @@ export default function PeoplePanel({
               }}
               placeholder="Name"
               className="input"
+              aria-label="Add a person"
             />
             <Button label="Add" onClick={onAddPerson} />
           </div>
