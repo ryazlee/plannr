@@ -1,15 +1,29 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { Trash2 } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
 import { formatDisplayDate, formatTimeRange } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { hasUrlPlanPayload, readSavedPlan, createNewPlanLocation } from '../../utils/urlState'
+import { hasUrlPlanPayload, createNewPlanLocation, createEditorLocation } from '../../utils/urlState'
+import { readStoredPlans, removeStoredPlan, type StoredPlan } from '../../utils/planStorage'
+
+function planMeta(plan: StoredPlan): string {
+  return [
+    formatDisplayDate(plan.state.date),
+    formatTimeRange(plan.state.events),
+    plan.state.events.length > 0
+      ? `${plan.state.events.length} event${plan.state.events.length === 1 ? '' : 's'}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+}
 
 export default function HomeScreen() {
   const navigate = useNavigate()
   const hasPayload = hasUrlPlanPayload()
-  const saved = useMemo(() => (hasPayload ? null : readSavedPlan()), [hasPayload])
+  const [plans, setPlans] = useState<StoredPlan[]>(() => (hasPayload ? [] : readStoredPlans()))
 
   useEffect(() => {
     applyShareMeta(
@@ -37,18 +51,10 @@ export default function HomeScreen() {
     return null
   }
 
-  const savedTitle = saved?.title.trim() || 'Untitled plan'
-  const savedMeta = saved
-    ? [
-        formatDisplayDate(saved.date),
-        formatTimeRange(saved.events),
-        saved.events.length > 0
-          ? `${saved.events.length} event${saved.events.length === 1 ? '' : 's'}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-    : ''
+  function removePlan(planId: string) {
+    removeStoredPlan(planId)
+    setPlans(readStoredPlans())
+  }
 
   return (
     <div className="app-shell app-shell--home">
@@ -60,23 +66,43 @@ export default function HomeScreen() {
               <p className="home__lede">
                 Build a day plan with a timeline and a map. Share a view-only link when you’re ready.
               </p>
-              <p className="home__note">No accounts, no ads, all free.</p>
+              <p className="home__note">No accounts, no ads, all free. Up to five plans on this device.</p>
             </div>
 
-            {saved ? (
-              <Link className="home__saved" to="/edit">
-                <span className="home__saved-kicker">Saved on this device</span>
-                <span className="home__saved-title">{savedTitle}</span>
-                {savedMeta ? <span className="home__saved-meta">{savedMeta}</span> : null}
-              </Link>
+            {plans.length > 0 ? (
+              <div className="home__plans">
+                <p className="home__saved-kicker">Saved on this device</p>
+                <ul className="home__plan-list">
+                  {plans.map((plan) => {
+                    const title = plan.state.title.trim() || 'Untitled plan'
+                    const meta = planMeta(plan)
+                    return (
+                      <li key={plan.id} className="home__saved">
+                        <Link className="home__saved-main" to={createEditorLocation(plan.state)}>
+                          <span className="home__saved-title">{title}</span>
+                          {meta ? <span className="home__saved-meta">{meta}</span> : null}
+                        </Link>
+                        <button
+                          type="button"
+                          className="home__saved-remove"
+                          aria-label={`Remove ${title} from this device`}
+                          title="Remove from this device"
+                          onClick={() => removePlan(plan.id)}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
             ) : null}
 
             <div className="home__actions">
-              {saved ? <Button label="Continue plan" to="/edit" /> : null}
               <Button
-                label={saved ? 'Start a new plan' : 'Start a plan'}
-                variant={saved ? 'secondary' : 'primary'}
-                to={saved ? createNewPlanLocation() : '/edit'}
+                label="Start a new plan"
+                variant={plans.length > 0 ? 'secondary' : 'primary'}
+                to={createNewPlanLocation()}
               />
             </div>
           </div>

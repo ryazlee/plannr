@@ -11,11 +11,11 @@ import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
 import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { createEditorLocation, createViewUrl, hydrateState } from '../../utils/urlState'
+import { createEditorLocation, createNewPlanLocation, createViewUrl, hydrateViewState } from '../../utils/urlState'
 import { hasCalendarDate } from '../../utils/calendar'
 
 export default function PreviewScreen() {
-  const itinerary = useMemo(() => hydrateState(), [])
+  const itinerary = useMemo(() => hydrateViewState(), [])
   const isDesktop = useDesktopLayout()
   const [previewMode, setPreviewMode] = usePreviewMode()
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null)
@@ -71,7 +71,7 @@ export default function PreviewScreen() {
           <div className="shell-inner">
             <div className="stack">
               <p className="empty-hint">No plan in this link yet.</p>
-              <Button label="Create a plan" to="/edit" variant="secondary" />
+              <Button label="Create a plan" to={createNewPlanLocation()} variant="secondary" />
             </div>
           </div>
         </main>

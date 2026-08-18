@@ -4,43 +4,56 @@ import {
   createEmptyState,
   createEventId,
   currentTimeInput,
+  isEmptyState,
   roundCoord,
   withSortedEvents,
 } from '../utils/itinerary'
-import { clearStoredState, createViewUrl, encodeUrlState, hydrateState, writeUrlState } from '../utils/urlState'
+import { createViewUrl, encodeUrlState, hydrateEditorState, writeUrlState } from '../utils/urlState'
+import { removeStoredPlan, upsertStoredPlan } from '../utils/planStorage'
 import { reverseGeocode } from '../utils/geocode'
 
 export function useItinerary() {
-  const [itinerary, setItinerary] = useState<ItineraryState>(() => hydrateState())
+  const boot = useRef<ReturnType<typeof hydrateEditorState> | null>(null)
+  if (boot.current === null) {
+    boot.current = hydrateEditorState()
+  }
+
+  const [itinerary, setItinerary] = useState<ItineraryState>(boot.current.state)
   const [draftStartTime, setDraftStartTime] = useState(currentTimeInput)
   const [draftEndTime, setDraftEndTime] = useState('')
   const [draftTitle, setDraftTitle] = useState('')
   const [draftNotes, setDraftNotes] = useState('')
   const [draftLink, setDraftLink] = useState('')
-  const [draftPeople, setDraftPeople] = useState<string[]>([...itinerary.people])
+  const [draftPeople, setDraftPeople] = useState<string[]>([...boot.current.state.people])
   const [personDraft, setPersonDraft] = useState('')
   const [pendingLocation, setPendingLocation] = useState<LatLng | null>(null)
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null)
   const [notice, setNotice] = useState('')
-  const lastSerializedRef = useRef(encodeUrlState(itinerary))
+  const lastSerializedRef = useRef(encodeUrlState(boot.current.state))
+  const planIdRef = useRef(boot.current.planId)
 
   useEffect(() => {
     const serialized = encodeUrlState(itinerary)
     lastSerializedRef.current = serialized
     writeUrlState(itinerary)
+    if (isEmptyState(itinerary)) {
+      return
+    }
+    planIdRef.current = upsertStoredPlan(itinerary, planIdRef.current)
   }, [itinerary])
 
   useEffect(() => {
     function handleHashChange() {
-      const nextState = hydrateState()
-      const serialized = encodeUrlState(nextState)
+      const next = hydrateEditorState()
+      const serialized = encodeUrlState(next.state)
       if (serialized === lastSerializedRef.current) {
         return
       }
 
       lastSerializedRef.current = serialized
+      planIdRef.current = next.planId
       startTransition(() => {
-        setItinerary(nextState)
+        setItinerary(next.state)
       })
     }
 
@@ -276,7 +289,10 @@ export function useItinerary() {
 
   function clearPlan() {
     const start = currentTimeInput()
-    clearStoredState()
+    if (planIdRef.current) {
+      removeStoredPlan(planIdRef.current)
+      planIdRef.current = null
+    }
     startTransition(() => {
       setItinerary(createEmptyState())
     })

@@ -5,11 +5,11 @@ import {
 } from 'lz-string'
 import type { ItineraryState } from '../types'
 import { createEmptyState, isEmptyState, parseItineraryState, serializeItineraryState } from './itinerary'
+import { findStoredPlanByState } from './planStorage'
 
 const PLAN_PARAM = 'plan'
 const NEW_PLAN_PARAM = 'new'
 const LZ_PREFIX = 's:'
-const PLAN_STORAGE_KEY = 'plannr-plan'
 // Letters and numbers only. iMessage/Signal drop a URL after 301 Base64-like
 // characters with no hyphen, so payloads are hyphenated every 64 chars.
 const PAYLOAD_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -266,49 +266,7 @@ export function hasUrlPlanPayload(): boolean {
   return new URLSearchParams(window.location.search).has(PLAN_PARAM)
 }
 
-function readStoredState(): ItineraryState | null {
-  try {
-    const raw = localStorage.getItem(PLAN_STORAGE_KEY)
-    if (!raw) {
-      return null
-    }
-
-    return parseItineraryState(JSON.parse(raw) as unknown)
-  } catch {
-    return null
-  }
-}
-
-function writeStoredState(state: ItineraryState): void {
-  try {
-    localStorage.setItem(PLAN_STORAGE_KEY, JSON.stringify(serializeItineraryState(state)))
-  } catch {
-    // ignore quota / private mode
-  }
-}
-
-export function clearStoredState(): void {
-  try {
-    localStorage.removeItem(PLAN_STORAGE_KEY)
-  } catch {
-    // ignore quota / private mode
-  }
-}
-
-export function readSavedPlan(): ItineraryState | null {
-  const stored = readStoredState()
-  if (!stored || isEmptyState(stored)) {
-    return null
-  }
-
-  return stored
-}
-
 export function writeUrlState(state: ItineraryState): void {
-  if (!isEmptyState(state)) {
-    writeStoredState(state)
-  }
-
   const url = new URL(window.location.href)
   url.searchParams.delete(PLAN_PARAM)
   url.searchParams.delete(NEW_PLAN_PARAM)
@@ -329,12 +287,7 @@ export function writeUrlState(state: ItineraryState): void {
   window.history.replaceState(null, '', next)
 }
 
-export function hydrateState(): ItineraryState {
-  if (new URLSearchParams(window.location.search).has(NEW_PLAN_PARAM)) {
-    writeUrlState(createEmptyState())
-    return createEmptyState()
-  }
-
+export function hydrateViewState(): ItineraryState {
   const fromUrl = readUrlState()
   if (fromUrl) {
     writeUrlState(fromUrl)
@@ -346,14 +299,34 @@ export function hydrateState(): ItineraryState {
     return createEmptyState()
   }
 
-  const fromStorage = readStoredState()
-  if (fromStorage && !isEmptyState(fromStorage)) {
-    writeUrlState(fromStorage)
-    return fromStorage
+  return createEmptyState()
+}
+
+export function hydrateEditorState(): {
+  state: ItineraryState
+  planId: string | null
+} {
+  if (new URLSearchParams(window.location.search).has(NEW_PLAN_PARAM)) {
+    writeUrlState(createEmptyState())
+    return { state: createEmptyState(), planId: null }
+  }
+
+  const fromUrl = readUrlState()
+  if (fromUrl) {
+    writeUrlState(fromUrl)
+    return {
+      state: fromUrl,
+      planId: findStoredPlanByState(fromUrl)?.id ?? null,
+    }
+  }
+
+  if (hasUrlPlanPayload()) {
+    writeUrlState(createEmptyState())
+    return { state: createEmptyState(), planId: null }
   }
 
   writeUrlState(createEmptyState())
-  return createEmptyState()
+  return { state: createEmptyState(), planId: null }
 }
 
 export function createViewLocation(state: ItineraryState): {
@@ -367,10 +340,12 @@ export function createViewLocation(state: ItineraryState): {
 export function createNewPlanLocation(): {
   pathname: string
   search: string
+  hash: string
 } {
   return {
     pathname: '/edit',
     search: `?${NEW_PLAN_PARAM}=1`,
+    hash: '',
   }
 }
 
