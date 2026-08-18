@@ -102,6 +102,84 @@ export function hasLocation(event: Pick<Event, 'lat' | 'lng'>): event is Located
   return event.lat != null && event.lng != null
 }
 
+const EARTH_RADIUS_M = 6_371_000
+const SAME_PLACE_M = 30
+
+function toRadians(degrees: number): number {
+  return (degrees * Math.PI) / 180
+}
+
+export function haversineMeters(
+  from: Pick<LocatedEvent, 'lat' | 'lng'>,
+  to: Pick<LocatedEvent, 'lat' | 'lng'>,
+): number {
+  const dLat = toRadians(to.lat - from.lat)
+  const dLng = toRadians(to.lng - from.lng)
+  const lat1 = toRadians(from.lat)
+  const lat2 = toRadians(to.lat)
+  const a =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+export function lastLocatedEvent(events: Event[]): LocatedEvent | null {
+  for (let index = events.length - 1; index >= 0; index -= 1) {
+    const event = events[index]
+    if (event && hasLocation(event)) {
+      return event
+    }
+  }
+  return null
+}
+
+export function firstLocatedEvent(events: Event[]): LocatedEvent | null {
+  return events.find(hasLocation) ?? null
+}
+
+export function gapDistanceMeters(previousEvents: Event[], nextEvents: Event[]): number | null {
+  const from = lastLocatedEvent(previousEvents)
+  const to = firstLocatedEvent(nextEvents)
+  if (!from || !to || from.id === to.id) {
+    return null
+  }
+
+  const meters = haversineMeters(from, to)
+  return meters < SAME_PLACE_M ? null : meters
+}
+
+function prefersImperialDistance(): boolean {
+  if (typeof navigator === 'undefined') {
+    return true
+  }
+
+  const region = navigator.language.split('-')[1]?.toUpperCase()
+  return region === 'US' || region === 'GB' || region === 'MM' || region === 'LR'
+}
+
+function formatDistanceNumber(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(1)
+}
+
+export function formatDistance(meters: number): string {
+  if (prefersImperialDistance()) {
+    const miles = meters / 1609.344
+    if (miles < 0.1) {
+      return `${Math.max(1, Math.round(meters / 0.3048))} ft`
+    }
+    const rounded = miles < 10 ? Math.round(miles * 10) / 10 : Math.round(miles)
+    return `${formatDistanceNumber(rounded)} mi`
+  }
+
+  if (meters < 1000) {
+    const rounded = meters < 100 ? Math.round(meters) : Math.round(meters / 10) * 10
+    return `${rounded} m`
+  }
+
+  const km = meters / 1000
+  const rounded = km < 10 ? Math.round(km * 10) / 10 : Math.round(km)
+  return `${formatDistanceNumber(rounded)} km`
+}
+
 function parseCoord(value: unknown): number | null {
   if (isFiniteNumber(value)) {
     return roundCoord(value)

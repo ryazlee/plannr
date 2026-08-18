@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import EventDetails from './EventDetails'
 import {
+  formatDistance,
   formatGapLabel,
   formatTime,
+  gapDistanceMeters,
   groupEventsByStartTime,
   latestEffectiveEnd,
   minutesBetween,
@@ -44,6 +46,7 @@ export default function PreviewTimeline({
           group={group}
           startIndex={startIndex}
           previous={groups[groupIndex - 1]?.group}
+          priorEvents={groups.slice(0, groupIndex).flatMap((entry) => entry.group)}
           people={people}
           focusedEventId={focusedEventId}
           onSelectEvent={onSelectEvent}
@@ -57,6 +60,7 @@ function PreviewCluster({
   group,
   startIndex,
   previous,
+  priorEvents,
   people,
   focusedEventId,
   onSelectEvent,
@@ -64,6 +68,7 @@ function PreviewCluster({
   group: Event[]
   startIndex: number
   previous: Event[] | undefined
+  priorEvents: Event[]
   people: string[]
   focusedEventId: string | null
   onSelectEvent: (eventId: string) => void
@@ -74,14 +79,21 @@ function PreviewCluster({
     lead && previous && lead.startTime && previousEnd
       ? minutesBetween(previousEnd, lead.startTime)
       : null
+  const distance = priorEvents.length > 0 ? gapDistanceMeters(priorEvents, group) : null
+  const transitLabel = [
+    gap ? formatGapLabel(gap) : null,
+    distance != null ? formatDistance(distance) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const concurrent = group.length > 1
   const startLabel = lead ? formatTime(lead.startTime) : ''
 
   return (
     <li className={concurrent ? 'preview-slot preview-slot--split' : 'preview-slot'}>
-      {gap ? (
-        <div className={['preview-gap', gap >= 60 ? 'preview-gap--hour' : null].filter(Boolean).join(' ')}>
-          <p className="preview-gap__label">{formatGapLabel(gap)}</p>
+      {transitLabel ? (
+        <div className={['preview-gap', gap != null && gap >= 60 ? 'preview-gap--hour' : null].filter(Boolean).join(' ')}>
+          <p className="preview-gap__label">{transitLabel}</p>
         </div>
       ) : null}
       <div
@@ -94,7 +106,7 @@ function PreviewCluster({
         {concurrent ? (
           <>
             <span className="preview-cluster__when">{startLabel || '—'}</span>
-            <div className="preview-cluster__lanes">
+            <div className="preview-cluster__events">
               {group.map((event, offset) => (
                 <PreviewEventBlock
                   key={event.id}
@@ -172,6 +184,7 @@ function PreviewEventBlock({
         onClick={() => onSelectEvent(event.id)}
       >
         {lane ? null : <span className="preview-event__when">{startLabel || '—'}</span>}
+        <span className="preview-event__node" aria-hidden="true" />
         <span className="preview-event__title">{title}</span>
       </button>
       <div

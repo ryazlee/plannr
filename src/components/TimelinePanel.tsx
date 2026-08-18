@@ -1,7 +1,6 @@
 import { ExternalLink, Trash2 } from 'lucide-react'
 import EventMiniMap from './EventMiniMap'
 import MapSearch from './MapSearch'
-import MapsLink from './MapsLink'
 import PeopleChips from './PeopleChips'
 import SectionCard from './SectionCard'
 import TimeFields from './TimeFields'
@@ -19,7 +18,6 @@ type TimelinePanelProps = {
     value: string,
   ) => void
   onTogglePerson: (eventId: string, name: string) => void
-  onToggleEveryone: (eventId: string) => void
   onRemoveEvent: (eventId: string) => void
   onSelectEvent: (eventId: string) => void
   onMoveEvent: (eventId: string, lat: number, lng: number, place?: string) => void
@@ -32,7 +30,6 @@ export default function TimelinePanel({
   showMaps,
   onUpdateEvent,
   onTogglePerson,
-  onToggleEveryone,
   onRemoveEvent,
   onSelectEvent,
   onMoveEvent,
@@ -133,7 +130,6 @@ export default function TimelinePanel({
                         people={people}
                         assigned={event.people}
                         onTogglePerson={(name) => onTogglePerson(event.id, name)}
-                        onToggleEveryone={() => onToggleEveryone(event.id)}
                       />
                       {showMiniMap ? (
                         <EventMiniMap
@@ -167,7 +163,6 @@ export default function TimelinePanel({
                           />
                         </div>
                       ) : null}
-                      {located ? <MapsLink lat={event.lat} lng={event.lng} /> : null}
                     </div>
                   </div>
                 </article>

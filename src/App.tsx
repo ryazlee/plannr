@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
+import HomeScreen from './components/screens/HomeScreen'
 import PlannerScreen from './components/screens/PlannerScreen'
 import PreviewScreen from './components/screens/PreviewScreen'
 import { ThemeProvider } from './theme'
@@ -26,7 +27,8 @@ function App() {
       <BrowserRouter basename={getRouterBasename() || undefined}>
         <RouteAnalytics />
         <Routes>
-          <Route path="/" element={<PlannerScreen />} />
+          <Route path="/" element={<HomeScreen />} />
+          <Route path="/edit" element={<PlannerScreen />} />
           <Route path="/view/:slug/:planToken" element={<PreviewScreen />} />
           <Route path="/view/:planToken" element={<PreviewScreen />} />
           <Route path="/view" element={<PreviewScreen />} />

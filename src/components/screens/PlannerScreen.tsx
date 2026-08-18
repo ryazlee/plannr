@@ -44,10 +44,8 @@ export default function PlannerScreen() {
     moveEventPin,
     addEvent,
     toggleDraftPerson,
-    toggleDraftEveryone,
     updateEvent,
     toggleEventPerson,
-    toggleEventEveryone,
     removeEvent,
     copyShareLink,
     clearPlan,
@@ -131,7 +129,6 @@ export default function PlannerScreen() {
                   onNotesChange={setDraftNotes}
                   onLinkChange={setDraftLink}
                   onTogglePerson={toggleDraftPerson}
-                  onToggleEveryone={toggleDraftEveryone}
                   onAddEvent={addEvent}
                   onPrepareNew={() => setFocusedEventId(null)}
                   onPlacePin={placeNewPin}
@@ -144,7 +141,6 @@ export default function PlannerScreen() {
                   showMaps={!isDesktop}
                   onUpdateEvent={updateEvent}
                   onTogglePerson={toggleEventPerson}
-                  onToggleEveryone={toggleEventEveryone}
                   onRemoveEvent={removeEvent}
                   onSelectEvent={setFocusedEventId}
                   onMoveEvent={moveEventPin}

@@ -24,7 +24,6 @@ type AddEventPanelProps = {
   onNotesChange: (value: string) => void
   onLinkChange: (value: string) => void
   onTogglePerson: (name: string) => void
-  onToggleEveryone: () => void
   onAddEvent: () => void
   onPrepareNew?: () => void
   onPlacePin: (lat: number, lng: number, place?: string) => void
@@ -47,7 +46,6 @@ export default function AddEventPanel({
   onNotesChange,
   onLinkChange,
   onTogglePerson,
-  onToggleEveryone,
   onAddEvent,
   onPrepareNew,
   onPlacePin,
@@ -119,7 +117,6 @@ export default function AddEventPanel({
             people={people}
             assigned={assigned}
             onTogglePerson={onTogglePerson}
-            onToggleEveryone={onToggleEveryone}
           />
 
           {showMap ? (

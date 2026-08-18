@@ -28,6 +28,11 @@ function getRelativePathname(pathname: string): string {
   return pathname
 }
 
+function isEditorPath(pathname: string): boolean {
+  const relative = getRelativePathname(pathname)
+  return relative === '/edit' || relative.startsWith('/edit/')
+}
+
 function isViewPath(pathname: string): boolean {
   const relative = getRelativePathname(pathname)
   return (
@@ -248,7 +253,7 @@ export function readUrlState(): ItineraryState | null {
   return decodePayload(params.get(PLAN_PARAM) ?? '')
 }
 
-function hasUrlPlanPayload(): boolean {
+export function hasUrlPlanPayload(): boolean {
   if (readPathPayload()) {
     return true
   }
@@ -289,6 +294,15 @@ export function clearStoredState(): void {
   }
 }
 
+export function readSavedPlan(): ItineraryState | null {
+  const stored = readStoredState()
+  if (!stored || isEmptyState(stored)) {
+    return null
+  }
+
+  return stored
+}
+
 export function writeUrlState(state: ItineraryState): void {
   if (!isEmptyState(state)) {
     writeStoredState(state)
@@ -300,7 +314,7 @@ export function writeUrlState(state: ItineraryState): void {
   if (isViewPath(url.pathname)) {
     url.pathname = viewPathname(state)
     url.hash = ''
-  } else {
+  } else if (isEditorPath(url.pathname)) {
     url.hash = hyphenatePayload(encodeUrlState(state))
   }
 
@@ -349,7 +363,7 @@ export function createEditorLocation(state: ItineraryState): {
 } {
   const encoded = hyphenatePayload(encodeUrlState(state))
   return {
-    pathname: '/',
+    pathname: '/edit',
     hash: encoded ? `#${encoded}` : '',
   }
 }

@@ -71,7 +71,7 @@ export default function PreviewScreen() {
           <div className="shell-inner">
             <div className="stack">
               <p className="empty-hint">No plan in this link yet.</p>
-              <Button label="Create a plan" to="/" variant="secondary" />
+              <Button label="Create a plan" to="/edit" variant="secondary" />
             </div>
           </div>
         </main>

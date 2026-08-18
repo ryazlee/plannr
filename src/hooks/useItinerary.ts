@@ -215,15 +215,6 @@ export function useItinerary() {
     )
   }
 
-  function toggleDraftEveryone() {
-    setDraftPeople((current) => {
-      const allAssigned =
-        itinerary.people.length > 0
-        && itinerary.people.every((person) => current.includes(person))
-      return allAssigned ? [] : [...itinerary.people]
-    })
-  }
-
   function addEvent() {
     const title = draftTitle.trim()
     if (!title) {
@@ -261,26 +252,6 @@ export function useItinerary() {
           people: assigned
             ? event.people.filter((person) => person !== name)
             : [...event.people, name],
-        }
-      }),
-    }))
-  }
-
-  function toggleEventEveryone(eventId: string) {
-    updateState((current) => ({
-      ...current,
-      events: current.events.map((event) => {
-        if (event.id !== eventId) {
-          return event
-        }
-
-        const allAssigned =
-          current.people.length > 0
-          && current.people.every((person) => event.people.includes(person))
-
-        return {
-          ...event,
-          people: allAssigned ? [] : [...current.people],
         }
       }),
     }))
@@ -350,10 +321,8 @@ export function useItinerary() {
     moveEventPin,
     addEvent,
     toggleDraftPerson,
-    toggleDraftEveryone,
     updateEvent,
     toggleEventPerson,
-    toggleEventEveryone,
     removeEvent,
     copyShareLink,
     clearPlan,
