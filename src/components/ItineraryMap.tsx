@@ -266,7 +266,7 @@ function ZoomOutControl({
   }
 
   return createPortal(
-    <div ref={attachControl} className="leaflet-bar map-fit-control">
+    <div ref={attachControl} className="leaflet-control leaflet-bar map-fit-control">
       <button
         type="button"
         title="Zoom out"
