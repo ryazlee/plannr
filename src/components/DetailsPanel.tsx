@@ -1,22 +1,18 @@
 import { Eye, Link2 } from 'lucide-react'
 import type { To } from 'react-router-dom'
 import Button from './Button'
-import SaveMemoryButton from './SaveMemoryButton'
 import SectionCard from './SectionCard'
-import type { ItineraryState } from '../types'
 
 type DetailsPanelProps = {
   title: string
   date: string
   notice: string
   eventCount: number
-  itinerary: ItineraryState
   viewLocation: To
   onTitleChange: (value: string) => void
   onDateChange: (value: string) => void
   onCopyShareLink: () => void
   onClearPlan: () => void
-  onNotice: (message: string) => void
 }
 
 export default function DetailsPanel({
@@ -24,13 +20,11 @@ export default function DetailsPanel({
   date,
   notice,
   eventCount,
-  itinerary,
   viewLocation,
   onTitleChange,
   onDateChange,
   onCopyShareLink,
   onClearPlan,
-  onNotice,
 }: DetailsPanelProps) {
   return (
     <div className="planner-details">
@@ -73,14 +67,6 @@ export default function DetailsPanel({
                 to={viewLocation}
               />
             </div>
-
-            <SaveMemoryButton
-              itinerary={itinerary}
-              onNotice={onNotice}
-              variant="ghost"
-              label="Download"
-              block
-            />
 
             {eventCount > 0 || title || date ? (
               <Button label="Clear plan" variant="ghost" block onClick={onClearPlan} />

@@ -29,7 +29,6 @@ export default function PlannerScreen() {
     pendingLocation,
     focusedEventId,
     notice,
-    setNotice,
     setDraftStartTime,
     setDraftEndTime,
     setDraftTitle,
@@ -104,13 +103,11 @@ export default function PlannerScreen() {
                   date={itinerary.date}
                   notice={notice}
                   eventCount={itinerary.events.length}
-                  itinerary={itinerary}
                   viewLocation={createViewLocation(itinerary)}
                   onTitleChange={updateTitle}
                   onDateChange={updateDate}
                   onCopyShareLink={copyShareLink}
                   onClearPlan={clearPlan}
-                  onNotice={setNotice}
                 />
 
                 <PeoplePanel

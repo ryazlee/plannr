@@ -12,8 +12,9 @@ import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
 import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
-import { createEditorLocation, createNewPlanLocation, createViewUrl, hydrateViewState } from '../../utils/urlState'
+import { createEditorLocation, createViewUrl, hydrateViewState } from '../../utils/urlState'
 import { hasCalendarDate } from '../../utils/calendar'
+import { findStoredPlanByState } from '../../utils/planStorage'
 
 export default function PreviewScreen() {
   const itinerary = useMemo(() => hydrateViewState(), [])
@@ -28,6 +29,7 @@ export default function PreviewScreen() {
   )
 
   const editorLocation = createEditorLocation(itinerary)
+  const canEdit = Boolean(findStoredPlanByState(itinerary))
   const empty = isEmptyState(itinerary)
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export default function PreviewScreen() {
           <div className="shell-inner">
             <div className="stack">
               <p className="empty-hint">No plan in this link yet.</p>
-              <Button label="Create a plan" to={createNewPlanLocation()} variant="secondary" />
+              <Button label="Home" to="/" variant="secondary" />
             </div>
           </div>
         </main>
@@ -110,13 +112,15 @@ export default function PreviewScreen() {
             variant="ghost"
             onClick={copyShareLink}
           />
-          <Button
-            label="Edit"
-            icon={<Pencil size={16} />}
-            size="sm"
-            variant="ghost"
-            to={editorLocation}
-          />
+          {canEdit ? (
+            <Button
+              label="Edit"
+              icon={<Pencil size={16} />}
+              size="sm"
+              variant="ghost"
+              to={editorLocation}
+            />
+          ) : null}
         </div>
       </div>
 
