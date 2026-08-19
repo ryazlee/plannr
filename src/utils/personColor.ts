@@ -9,18 +9,18 @@ export type RouteSwatch = {
 }
 
 export const PERSON_LINES = [
-  '#c2410c',
-  '#dc2626',
-  '#059669',
+  '#c4541c',
+  '#dc3440',
+  '#1c8828',
   '#db2777',
-  '#7c3aed',
-  '#0d9488',
+  '#8c5cd4',
+  '#108662',
   '#e11d48',
-  '#d97706',
-  '#9f1239',
-  '#65a30d',
+  '#947028',
   '#c026d3',
-  '#9a3412',
+  '#6b7c1c',
+  '#d03494',
+  '#b45309',
 ] as const
 
 const ROUTE_HALO: Record<Theme, string> = {
