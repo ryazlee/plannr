@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link2, Pencil } from 'lucide-react'
+import { BookmarkPlus, Check, Link2, Pencil } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
 import { useCalendarExport } from '../CalendarExport'
@@ -14,7 +14,12 @@ import { formatDisplayDate, formatTimeRange, isEmptyState } from '../../utils/it
 import { applyShareMeta } from '../../utils/shareMeta'
 import { createEditorLocation, createViewUrl, hydrateViewState } from '../../utils/urlState'
 import { hasCalendarDate } from '../../utils/calendar'
-import { findStoredPlanByState } from '../../utils/planStorage'
+import {
+  findStoredPlanByState,
+  MAX_STORED_PLANS,
+  readStoredPlans,
+  upsertStoredPlan,
+} from '../../utils/planStorage'
 
 export default function PreviewScreen() {
   const itinerary = useMemo(() => hydrateViewState(), [])
@@ -29,7 +34,7 @@ export default function PreviewScreen() {
   )
 
   const editorLocation = createEditorLocation(itinerary)
-  const canEdit = Boolean(findStoredPlanByState(itinerary))
+  const [savedOnDevice, setSavedOnDevice] = useState(() => Boolean(findStoredPlanByState(itinerary)))
   const empty = isEmptyState(itinerary)
 
   useEffect(() => {
@@ -57,6 +62,28 @@ export default function PreviewScreen() {
     } catch {
       setNotice('Clipboard access failed. Copy the URL from the address bar instead.')
     }
+  }
+
+  function saveToDevice() {
+    if (savedOnDevice || findStoredPlanByState(itinerary)) {
+      setSavedOnDevice(true)
+      setNotice('This plan is already saved on this device.')
+      return
+    }
+
+    const atCap = readStoredPlans().length >= MAX_STORED_PLANS
+    const id = upsertStoredPlan(itinerary)
+    if (!id) {
+      setNotice('Could not save this plan on this device.')
+      return
+    }
+
+    setSavedOnDevice(true)
+    setNotice(
+      atCap
+        ? 'Saved on this device. The oldest plan was removed to stay at 5.'
+        : 'Saved on this device. You’ll see it on the home screen.',
+    )
   }
 
   function selectEvent(eventId: string) {
@@ -98,6 +125,8 @@ export default function PreviewScreen() {
             onAddDay={addDay}
             onAddEachEvent={addEachEvent}
             onSaveImage={() => saveMemoryRef.current?.open()}
+            savedOnDevice={savedOnDevice}
+            onSaveToDevice={saveToDevice}
           />
           <SaveMemoryButton
             ref={saveMemoryRef}
@@ -106,21 +135,28 @@ export default function PreviewScreen() {
             size="sm"
           />
           <Button
+            label={savedOnDevice ? 'Saved' : 'Save'}
+            icon={savedOnDevice ? <Check size={16} /> : <BookmarkPlus size={16} />}
+            size="sm"
+            variant="ghost"
+            disabled={savedOnDevice}
+            title={savedOnDevice ? 'Saved on this device' : 'Save to this device'}
+            onClick={saveToDevice}
+          />
+          <Button
             label="Copy"
             icon={<Link2 size={16} />}
             size="sm"
             variant="ghost"
             onClick={copyShareLink}
           />
-          {canEdit ? (
-            <Button
-              label="Edit"
-              icon={<Pencil size={16} />}
-              size="sm"
-              variant="ghost"
-              to={editorLocation}
-            />
-          ) : null}
+          <Button
+            label="Edit"
+            icon={<Pencil size={16} />}
+            size="sm"
+            variant="ghost"
+            to={editorLocation}
+          />
         </div>
       </div>
 

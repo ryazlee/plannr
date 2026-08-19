@@ -97,10 +97,17 @@ function PreviewCluster({
 
   return (
     <li className={concurrent ? 'preview-slot preview-slot--split' : 'preview-slot'}>
-      {transitLabel ? (
-        <div className={['preview-gap', gap != null && gap >= 60 ? 'preview-gap--hour' : null].filter(Boolean).join(' ')}>
+      {previous && transitLabel ? (
+        <div
+          className={['preview-gap', gap != null && gap >= 60 ? 'preview-gap--hour' : null]
+            .filter(Boolean)
+            .join(' ')}
+          style={{ '--preview-gap-y': `${gapPaddingRem(gap)}rem` } as CSSProperties}
+        >
           <p className="preview-gap__label">{transitLabel}</p>
         </div>
+      ) : previous ? (
+        <div className="preview-gap preview-gap--empty" aria-hidden="true" />
       ) : null}
       <div
         className="preview-cluster"
@@ -144,6 +151,22 @@ function PreviewCluster({
       </div>
     </li>
   )
+}
+
+function gapPaddingRem(minutes: number | null): number {
+  if (minutes == null || minutes < 15) {
+    return 0.45
+  }
+  if (minutes < 45) {
+    return 0.85
+  }
+  if (minutes < 75) {
+    return 1.15
+  }
+  if (minutes < 150) {
+    return 1.4
+  }
+  return 1.6
 }
 
 function PreviewEventBlock({

@@ -8,23 +8,33 @@ export type RouteSwatch = {
   on: string
 }
 
-export const PERSON_PALETTE: Record<Theme, RouteSwatch[]> = {
-  light: [
-    { line: '#2563eb', halo: '#ffffff', on: '#ffffff' },
-    { line: '#c2410c', halo: '#ffffff', on: '#ffffff' },
-    { line: '#047857', halo: '#ffffff', on: '#ffffff' },
-    { line: '#be185d', halo: '#ffffff', on: '#ffffff' },
-    { line: '#6d28d9', halo: '#ffffff', on: '#ffffff' },
-    { line: '#0f766e', halo: '#ffffff', on: '#ffffff' },
-  ],
-  dark: [
-    { line: '#8cb4ff', halo: '#0b1220', on: '#09090b' },
-    { line: '#fbbf24', halo: '#0b1220', on: '#09090b' },
-    { line: '#4ade80', halo: '#0b1220', on: '#09090b' },
-    { line: '#fb7185', halo: '#0b1220', on: '#09090b' },
-    { line: '#c4b5fd', halo: '#0b1220', on: '#09090b' },
-    { line: '#2dd4bf', halo: '#0b1220', on: '#09090b' },
-  ],
+export const PERSON_LINES = [
+  '#c2410c',
+  '#dc2626',
+  '#059669',
+  '#db2777',
+  '#7c3aed',
+  '#0d9488',
+  '#e11d48',
+  '#d97706',
+  '#9f1239',
+  '#65a30d',
+  '#c026d3',
+  '#9a3412',
+] as const
+
+const ROUTE_HALO: Record<Theme, string> = {
+  light: '#ffffff',
+  dark: '#0b1220',
+}
+
+function personTone(index: number, theme: Theme): RouteSwatch {
+  const line = PERSON_LINES[index % PERSON_LINES.length]
+  return {
+    line,
+    halo: ROUTE_HALO[theme],
+    on: '#ffffff',
+  }
 }
 
 export const SHARED_ROUTE: Record<Theme, RouteSwatch> = {
@@ -32,14 +42,89 @@ export const SHARED_ROUTE: Record<Theme, RouteSwatch> = {
   dark: { line: '#8cb4ff', halo: '#0b1220', on: '#09090b' },
 }
 
-const PALETTE_SIZE = PERSON_PALETTE.light.length
+const PALETTE_SIZE = PERSON_LINES.length
+const PROBE_STEPS = [1, 5, 7, 11] as const
 
-export function personIndex(name: string, roster: string[]): number {
-  const index = roster.findIndex((person) => person === name)
-  return (index < 0 ? 0 : index) % PALETTE_SIZE
+function nameKey(name: string): string {
+  return name.trim().toLowerCase()
 }
 
-export function personCssVars(name: string, roster: string[]): {
+function nameHash(name: string): number {
+  const key = nameKey(name)
+  let hash = 2166136261
+  for (let index = 0; index < key.length; index += 1) {
+    hash ^= key.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+function preferredIndex(name: string): number {
+  return nameHash(name) % PALETTE_SIZE
+}
+
+function probeStep(name: string): number {
+  return PROBE_STEPS[(nameHash(name) >>> 8) % PROBE_STEPS.length]
+}
+
+function assignRosterColors(roster: string[]): Map<string, number> {
+  const seen = new Set<string>()
+  const people: { key: string; preferred: number; step: number }[] = []
+  for (const person of roster) {
+    const key = nameKey(person)
+    if (!key || seen.has(key)) {
+      continue
+    }
+    seen.add(key)
+    people.push({ key, preferred: preferredIndex(person), step: probeStep(person) })
+  }
+
+  people.sort((left, right) => left.key.localeCompare(right.key))
+
+  const taken = new Set<number>()
+  const assigned = new Map<string, number>()
+
+  for (const person of people) {
+    if (taken.has(person.preferred)) {
+      continue
+    }
+    taken.add(person.preferred)
+    assigned.set(person.key, person.preferred)
+  }
+
+  for (const person of people) {
+    if (assigned.has(person.key)) {
+      continue
+    }
+
+    let slot = person.preferred
+    for (let offset = 1; offset <= PALETTE_SIZE; offset += 1) {
+      slot = (person.preferred + person.step * offset) % PALETTE_SIZE
+      if (!taken.has(slot)) {
+        break
+      }
+    }
+
+    taken.add(slot)
+    assigned.set(person.key, slot)
+  }
+
+  return assigned
+}
+
+export function personIndex(name: string, roster: string[] = []): number {
+  const preferred = preferredIndex(name)
+  if (roster.length === 0) {
+    return preferred
+  }
+
+  return assignRosterColors(roster).get(nameKey(name)) ?? preferred
+}
+
+export function personCssVars(
+  name: string,
+  roster: string[] = [],
+): {
   ['--person-color']: string
   ['--person-on']: string
 } {
@@ -50,8 +135,8 @@ export function personCssVars(name: string, roster: string[]): {
   }
 }
 
-export function personSwatch(name: string, roster: string[], theme: Theme): RouteSwatch {
-  return PERSON_PALETTE[theme][personIndex(name, roster)]
+export function personSwatch(name: string, theme: Theme, roster: string[] = []): RouteSwatch {
+  return personTone(personIndex(name, roster), theme)
 }
 
 export function eventIncludesPerson(event: Event, person: string, roster: string[]): boolean {
@@ -94,10 +179,10 @@ export function concurrentMarkerColor(
     roster.every((name) => assigned.includes(name))
 
   if (assigned.length >= 1 && !everyone) {
-    return personSwatch(assigned[0], roster, theme).line
+    return personSwatch(assigned[0], theme, roster).line
   }
 
-  return PERSON_PALETTE[theme][fallbackIndex % PALETTE_SIZE].line
+  return personTone(fallbackIndex, theme).line
 }
 
 export type MapTrace = {
@@ -105,6 +190,40 @@ export type MapTrace = {
   positions: [number, number][]
   swatch: RouteSwatch
   spread: number
+}
+
+type RouteHop = {
+  from: LocatedEvent
+  to: LocatedEvent
+  people: string[]
+}
+
+function hopKey(from: LocatedEvent, to: LocatedEvent): string {
+  return `${from.id}>${to.id}`
+}
+
+function collectPersonHops(events: Event[], roster: string[]): RouteHop[] {
+  const located = events.filter(hasLocation)
+  const hops = new Map<string, RouteHop>()
+
+  for (const person of roster) {
+    const path = located.filter((event) => eventIncludesPerson(event, person, roster))
+    for (let index = 0; index < path.length - 1; index += 1) {
+      const from = path[index]
+      const to = path[index + 1]
+      const key = hopKey(from, to)
+      const existing = hops.get(key)
+      if (existing) {
+        if (!existing.people.includes(person)) {
+          existing.people.push(person)
+        }
+        continue
+      }
+      hops.set(key, { from, to, people: [person] })
+    }
+  }
+
+  return [...hops.values()]
 }
 
 function lastLocated(groups: Event[][], before: number): LocatedEvent | null {
@@ -148,21 +267,33 @@ export function mapRouteTraces(events: Event[], roster: string[], theme: Theme):
   }
 
   if (roster.length >= 2) {
-    const mid = (roster.length - 1) / 2
-    return roster.flatMap((person, index) => {
-      const path = located.filter((event) => eventIncludesPerson(event, person, roster))
-      if (path.length < 2) {
-        return []
+    const hops = collectPersonHops(events, roster)
+    const personalByOrigin = new Map<string, RouteHop[]>()
+    for (const hop of hops) {
+      if (hop.people.length !== 1) {
+        continue
       }
+      const siblings = personalByOrigin.get(hop.from.id) ?? []
+      siblings.push(hop)
+      personalByOrigin.set(hop.from.id, siblings)
+    }
 
-      return [
-        {
-          key: person,
-          positions: path.map((event) => [event.lat, event.lng] as [number, number]),
-          swatch: personSwatch(person, roster, theme),
-          spread: index - mid,
-        },
-      ]
+    return hops.map((hop) => {
+      const together = hop.people.length > 1
+      const siblings = personalByOrigin.get(hop.from.id) ?? [hop]
+      const siblingIndex = Math.max(0, siblings.findIndex((entry) => entry.to.id === hop.to.id))
+      const mid = (siblings.length - 1) / 2
+      const person = hop.people[0]
+
+      return {
+        key: hopKey(hop.from, hop.to),
+        positions: [
+          [hop.from.lat, hop.from.lng],
+          [hop.to.lat, hop.to.lng],
+        ] as [number, number][],
+        swatch: together || !person ? SHARED_ROUTE[theme] : personSwatch(person, theme, roster),
+        spread: together ? 0 : siblingIndex - mid,
+      }
     })
   }
 
@@ -204,7 +335,7 @@ export function mapRouteTraces(events: Event[], roster: string[], theme: Theme):
       traces.push({
         key: event.id,
         positions,
-        swatch: PERSON_PALETTE[theme][index % PALETTE_SIZE],
+        swatch: personTone(index, theme),
         spread: index - mid,
       })
     })
