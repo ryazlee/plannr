@@ -14,6 +14,18 @@
   --link: #2563eb;
   --danger: #dc2626;
   --success: #059669;
+  --person-0: #2563eb;
+  --person-0-on: #ffffff;
+  --person-1: #c2410c;
+  --person-1-on: #ffffff;
+  --person-2: #047857;
+  --person-2-on: #ffffff;
+  --person-3: #be185d;
+  --person-3-on: #ffffff;
+  --person-4: #6d28d9;
+  --person-4-on: #ffffff;
+  --person-5: #0f766e;
+  --person-5-on: #ffffff;
   --radius: 12px;
   --content-max: 1360px;
   --touch-min: 44px;
@@ -48,6 +60,18 @@ html.theme-dark {
   --link: #8cb4ff;
   --danger: #fb7185;
   --success: #4ade80;
+  --person-0: #8cb4ff;
+  --person-0-on: #09090b;
+  --person-1: #fbbf24;
+  --person-1-on: #09090b;
+  --person-2: #4ade80;
+  --person-2-on: #09090b;
+  --person-3: #fb7185;
+  --person-3-on: #09090b;
+  --person-4: #c4b5fd;
+  --person-4-on: #09090b;
+  --person-5: #2dd4bf;
+  --person-5-on: #09090b;
 }
 
 @theme inline {
@@ -931,6 +955,7 @@ html.theme-dark .leaflet-popup-tip {
 }
 
 .event-marker {
+  --marker-color: var(--accent);
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -947,7 +972,7 @@ html.theme-dark .leaflet-popup-tip {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--marker-color);
   color: var(--accent-contrast);
   font-size: 0.75rem;
   font-weight: 700;
@@ -963,7 +988,7 @@ html.theme-dark .leaflet-popup-tip {
   top: 21px;
   width: 14px;
   height: 14px;
-  background: var(--accent);
+  background: var(--marker-color);
   border-bottom: 2px solid var(--surface);
   border-right: 2px solid var(--surface);
   transform: translateX(-50%) rotate(45deg);
@@ -972,7 +997,7 @@ html.theme-dark .leaflet-popup-tip {
 
 .event-marker--focused .event-marker__badge {
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--marker-color) 35%, transparent),
     0 0 0 6px color-mix(in srgb, var(--surface) 80%, transparent);
 }
 
@@ -1181,6 +1206,16 @@ html.theme-dark .route-arrow {
   background: var(--accent);
   color: var(--accent-contrast);
   font-weight: 600;
+}
+
+.chip--person:not(.chip--active) {
+  border-color: color-mix(in srgb, var(--person-color) 50%, var(--border));
+}
+
+.chip--person.chip--active {
+  background: var(--person-color);
+  border-color: var(--person-color);
+  color: var(--person-on);
 }
 
 .chip--muted {
@@ -1901,6 +1936,16 @@ a.event-details__place:hover {
   background: var(--bg);
   box-shadow: 0 0 0 3px var(--bg);
   z-index: 1;
+}
+
+.preview-event-block--colored .preview-event__node {
+  border-color: var(--lane-color);
+  background: var(--lane-color);
+}
+
+.preview-event-block--colored.preview-event-block--active .preview-event__node {
+  border-color: var(--lane-color);
+  background: var(--lane-color);
 }
 
 .preview-event__title {

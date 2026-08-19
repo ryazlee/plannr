@@ -1,5 +1,7 @@
 import Button from './Button'
 import SectionCard from './SectionCard'
+import { personCssVars } from '../utils/personColor'
+import type { CSSProperties } from 'react'
 
 type PeoplePanelProps = {
   personDraft: string
@@ -27,7 +29,8 @@ export default function PeoplePanel({
                   key={person}
                   type="button"
                   onClick={() => onRemovePerson(person)}
-                  className="chip chip--active"
+                  className="chip chip--active chip--person"
+                  style={personCssVars(person, people) as CSSProperties}
                   title={`Remove ${person}`}
                 >
                   {person} ×

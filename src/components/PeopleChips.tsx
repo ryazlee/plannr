@@ -1,3 +1,6 @@
+import { personCssVars } from '../utils/personColor'
+import type { CSSProperties } from 'react'
+
 type PeopleChipsProps = {
   people: string[]
   assigned: string[]
@@ -21,7 +24,8 @@ export default function PeopleChips({
           <button
             key={person}
             type="button"
-            className={['chip', isAssigned ? 'chip--active' : null].filter(Boolean).join(' ')}
+            className={['chip', 'chip--person', isAssigned ? 'chip--active' : null].filter(Boolean).join(' ')}
+            style={personCssVars(person, people) as CSSProperties}
             onClick={() => onTogglePerson(person)}
           >
             {person}

@@ -5,6 +5,13 @@ import { DomEvent, divIcon, latLngBounds, type Map as LeafletMap, type Marker as
 import { Scan, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { Event, LatLng } from '../types'
 import { hasLocation } from '../utils/itinerary'
+import {
+  concurrentFallbackIndex,
+  concurrentMarkerColor,
+  isConcurrentEvent,
+  mapRouteTraces,
+  type RouteSwatch,
+} from '../utils/personColor'
 import { useTheme } from '../theme'
 import EventDetails from './EventDetails'
 
@@ -13,10 +20,6 @@ const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const LIGHT_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
-const ROUTE_STYLE = {
-  light: { line: '#3c6fe0', halo: '#ffffff' },
-  dark: { line: '#8cb4ff', halo: '#0b1220' },
-} as const
 
 type MapPoint = [number, number]
 
@@ -51,7 +54,7 @@ function cubicPoint(start: MapPoint, c1: MapPoint, c2: MapPoint, end: MapPoint, 
   ]
 }
 
-function curveControls(from: MapPoint, to: MapPoint): [MapPoint, MapPoint] {
+function curveControls(from: MapPoint, to: MapPoint, spread = 0): [MapPoint, MapPoint] {
   const latScale = Math.max(Math.cos(((from[0] + to[0]) / 2) * (Math.PI / 180)), 0.2)
   const north = to[0] - from[0]
   const east = (to[1] - from[1]) * latScale
@@ -61,7 +64,7 @@ function curveControls(from: MapPoint, to: MapPoint): [MapPoint, MapPoint] {
     return [mid, mid]
   }
 
-  const bulge = Math.min(dist * 0.12, 0.02)
+  const bulge = Math.min(dist * 0.12, 0.02) + spread * Math.min(dist * 0.1, 0.014)
   const offsetLat = (east / dist) * bulge
   const offsetLng = ((-north / dist) * bulge) / latScale
   return [
@@ -95,7 +98,7 @@ type ItineraryMapProps = {
   staticMap?: boolean
 }
 
-function markerIcon(index: number, pending = false, focused = false) {
+function markerIcon(index: number, pending = false, focused = false, color?: string) {
   if (pending) {
     return divIcon({
       className: 'event-marker-wrap',
@@ -107,26 +110,36 @@ function markerIcon(index: number, pending = false, focused = false) {
   }
 
   const focusedClass = focused ? ' event-marker--focused' : ''
+  const safeColor = color && /^#[0-9a-fA-F]{6}$/.test(color) ? color : ''
+  const colorStyle = safeColor ? ` style="--marker-color:${safeColor}"` : ''
   return divIcon({
     className: 'event-marker-wrap',
-    html: `<div class="event-marker${focusedClass}"><span class="event-marker__badge">${index}</span></div>`,
+    html: `<div class="event-marker${focusedClass}"${colorStyle}><span class="event-marker__badge">${index}</span></div>`,
     iconSize: [32, 42],
     iconAnchor: [16, 40],
     popupAnchor: [0, -36],
   })
 }
 
-function arrowIcon(bearing: number) {
+function arrowIcon(bearing: number, color: string) {
+  const safeColor = /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#3c6fe0'
   return divIcon({
     className: 'route-arrow-wrap',
-    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5 18 16.5 12 13.8 6 16.5Z"/></svg></div>`,
+    html: `<div class="route-arrow" style="transform:rotate(${bearing}deg);color:${safeColor}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5 18 16.5 12 13.8 6 16.5Z"/></svg></div>`,
     iconSize: [16, 16],
     iconAnchor: [8, 8],
   })
 }
 
-function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light' | 'dark' }) {
-  const colors = ROUTE_STYLE[theme]
+function RoutePath({
+  positions,
+  swatch,
+  spread = 0,
+}: {
+  positions: MapPoint[]
+  swatch: RouteSwatch
+  spread?: number
+}) {
   const route = useMemo(() => {
     const line: MapPoint[] = []
     const arrows: { position: MapPoint; bearing: number }[] = []
@@ -138,7 +151,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         continue
       }
 
-      const [c1, c2] = curveControls(from, to)
+      const [c1, c2] = curveControls(from, to, spread)
       const curved = curvePoints(from, c1, c2, to)
       if (line.length > 0) {
         curved.shift()
@@ -158,7 +171,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
     }
 
     return { line, arrows }
-  }, [positions])
+  }, [positions, spread])
 
   const lineOptions = {
     lineCap: 'round' as const,
@@ -176,7 +189,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         interactive={false}
         pathOptions={{
           ...lineOptions,
-          color: colors.halo,
+          color: swatch.halo,
           weight: 6,
           opacity: 0.86,
         }}
@@ -186,7 +199,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         interactive={false}
         pathOptions={{
           ...lineOptions,
-          color: colors.line,
+          color: swatch.line,
           weight: 2.4,
           opacity: 0.92,
         }}
@@ -195,7 +208,7 @@ function RoutePath({ positions, theme }: { positions: MapPoint[]; theme: 'light'
         <Marker
           key={`${arrow.position[0]},${arrow.position[1]},${arrow.bearing}`}
           position={arrow.position}
-          icon={arrowIcon(arrow.bearing)}
+          icon={arrowIcon(arrow.bearing, swatch.line)}
           interactive={false}
           keyboard={false}
           zIndexOffset={-600}
@@ -472,10 +485,7 @@ export default function ItineraryMap({
   const markerRefs = useRef<Map<string, LeafletMarker>>(new Map())
   const focusedEvent = events.find((event) => event.id === focusedEventId)
   const locatedEvents = useMemo(() => events.filter(hasLocation), [events])
-  const linePositions = useMemo(
-    () => locatedEvents.map((event) => [event.lat, event.lng] as [number, number]),
-    [locatedEvents],
-  )
+  const routeTraces = useMemo(() => mapRouteTraces(events, people, theme), [events, people, theme])
   const startCenter: [number, number] = locatedEvents[0]
     ? [locatedEvents[0].lat, locatedEvents[0].lng]
     : pendingLocation
@@ -537,8 +547,15 @@ export default function ItineraryMap({
         <UserLocation enabled={locatedEvents.length === 0 && !pendingLocation} />
       )}
 
-      {compact || linePositions.length < 2 ? null : (
-        <RoutePath positions={linePositions} theme={theme} />
+      {compact || routeTraces.length === 0 ? null : (
+        routeTraces.map((trace) => (
+          <RoutePath
+            key={trace.key}
+            positions={trace.positions}
+            swatch={trace.swatch}
+            spread={trace.spread}
+          />
+        ))
       )}
 
       {events.map((event, index) => {
@@ -557,7 +574,19 @@ export default function ItineraryMap({
             }
           }}
           position={[event.lat, event.lng]}
-          icon={markerIcon(startIndex + index, false, event.id === focusedEventId)}
+          icon={markerIcon(
+            startIndex + index,
+            false,
+            event.id === focusedEventId,
+            isConcurrentEvent(event, events)
+              ? concurrentMarkerColor(
+                  event,
+                  people,
+                  theme,
+                  concurrentFallbackIndex(event, events),
+                )
+              : undefined,
+          )}
           draggable={!readOnly && !staticMap}
           interactive={!staticMap}
           keyboard={!staticMap}

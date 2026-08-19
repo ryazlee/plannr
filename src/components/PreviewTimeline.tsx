@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, type CSSProperties } from 'react'
 import EventDetails from './EventDetails'
 import {
   formatDistance,
@@ -9,6 +9,7 @@ import {
   latestEffectiveEnd,
   minutesBetween,
 } from '../utils/itinerary'
+import { concurrentLaneColor } from '../utils/personColor'
 import type { Event } from '../types'
 
 type PreviewTimelineProps = {
@@ -120,6 +121,7 @@ function PreviewCluster({
                   people={people}
                   selected={event.id === focusedEventId}
                   lane
+                  laneColor={concurrentLaneColor(event, people, offset)}
                   onSelectEvent={onSelectEvent}
                   staticMode={staticMode}
                 />
@@ -150,6 +152,7 @@ function PreviewEventBlock({
   people,
   selected,
   lane = false,
+  laneColor,
   onSelectEvent,
   staticMode = false,
 }: {
@@ -158,6 +161,7 @@ function PreviewEventBlock({
   people: string[]
   selected: boolean
   lane?: boolean
+  laneColor?: string
   onSelectEvent: (eventId: string) => void
   staticMode?: boolean
 }) {
@@ -181,9 +185,11 @@ function PreviewEventBlock({
         selected ? 'preview-event-block--active' : null,
         selected ? 'preview-event--active' : null,
         lane ? 'preview-event-block--lane' : null,
+        laneColor ? 'preview-event-block--colored' : null,
       ]
         .filter(Boolean)
         .join(' ')}
+      style={laneColor ? ({ '--lane-color': laneColor } as CSSProperties) : undefined}
     >
       {lane ? null : <span className="preview-event__when">{startLabel || '—'}</span>}
       <span className="preview-event__node" aria-hidden="true" />
