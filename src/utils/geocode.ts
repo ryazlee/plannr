@@ -72,7 +72,7 @@ function featureToPlace(feature: PhotonFeature): PlaceResult | null {
   const coordinates = feature.geometry?.coordinates
   const lng = coordinates?.[0]
   const lat = coordinates?.[1]
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+  if (typeof lat !== 'number' || typeof lng !== 'number' || !Number.isFinite(lat) || !Number.isFinite(lng)) {
     return null
   }
 
