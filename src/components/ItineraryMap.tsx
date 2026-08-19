@@ -9,9 +9,9 @@ import { useTheme } from '../theme'
 import EventDetails from './EventDetails'
 
 const FALLBACK_CENTER: [number, number] = [37.7749, -122.4194]
-const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+const LIGHT_TILES = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-const LIGHT_ATTR = '&copy; OpenStreetMap'
+const LIGHT_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const DARK_ATTR = '&copy; OpenStreetMap &copy; CARTO'
 const ROUTE_STYLE = {
   light: { line: '#3c6fe0', halo: '#ffffff' },
@@ -92,6 +92,7 @@ type ItineraryMapProps = {
   searchTarget?: LatLng | null
   compact?: boolean
   startIndex?: number
+  staticMap?: boolean
 }
 
 function markerIcon(index: number, pending = false, focused = false) {
@@ -465,6 +466,7 @@ export default function ItineraryMap({
   searchTarget = null,
   compact = false,
   startIndex = 1,
+  staticMap = false,
 }: ItineraryMapProps) {
   const { theme } = useTheme()
   const markerRefs = useRef<Map<string, LeafletMarker>>(new Map())
@@ -508,20 +510,32 @@ export default function ItineraryMap({
     <MapContainer
       center={startCenter}
       zoom={locatedEvents.length > 0 ? (compact ? 15 : 13) : 12}
-      scrollWheelZoom
+      scrollWheelZoom={!staticMap}
+      dragging={!staticMap}
+      doubleClickZoom={!staticMap}
+      touchZoom={!staticMap}
+      boxZoom={!staticMap}
+      keyboard={!staticMap}
+      zoomControl={!compact && !staticMap}
+      attributionControl={!staticMap}
       className="h-full w-full"
     >
       <TileLayer
         url={theme === 'dark' ? DARK_TILES : LIGHT_TILES}
         attribution={theme === 'dark' ? DARK_ATTR : LIGHT_ATTR}
+        crossOrigin="anonymous"
       />
       {readOnly || !onMapClick ? null : <MapClickHandler onMapClick={onMapClick} />}
       <FitToEvents events={events} pendingLocation={pendingLocation} compact={compact} />
-      <ZoomOutControl events={events} pendingLocation={pendingLocation} compact={compact} />
-      {compact ? null : <FlyToFocused event={focusedEvent} />}
-      <FlyToSearch target={searchTarget} />
+      {compact || staticMap ? null : (
+        <ZoomOutControl events={events} pendingLocation={pendingLocation} compact={compact} />
+      )}
+      {compact || staticMap ? null : <FlyToFocused event={focusedEvent} />}
+      {staticMap ? null : <FlyToSearch target={searchTarget} />}
       <InvalidateOnResize />
-      {readOnly ? null : <UserLocation enabled={locatedEvents.length === 0 && !pendingLocation} />}
+      {readOnly || staticMap ? null : (
+        <UserLocation enabled={locatedEvents.length === 0 && !pendingLocation} />
+      )}
 
       {compact || linePositions.length < 2 ? null : (
         <RoutePath positions={linePositions} theme={theme} />
@@ -544,16 +558,22 @@ export default function ItineraryMap({
           }}
           position={[event.lat, event.lng]}
           icon={markerIcon(startIndex + index, false, event.id === focusedEventId)}
-          draggable={!readOnly}
-          eventHandlers={{
-            click: () => onSelectEvent(event.id),
-            dragend: (markerEvent) => {
-              const next = markerEvent.target.getLatLng()
-              onMoveEvent?.(event.id, next.lat, next.lng)
-            },
-          }}
+          draggable={!readOnly && !staticMap}
+          interactive={!staticMap}
+          keyboard={!staticMap}
+          eventHandlers={
+            staticMap
+              ? undefined
+              : {
+                  click: () => onSelectEvent(event.id),
+                  dragend: (markerEvent) => {
+                    const next = markerEvent.target.getLatLng()
+                    onMoveEvent?.(event.id, next.lat, next.lng)
+                  },
+                }
+          }
         >
-          {compact ? null : (
+          {compact || staticMap ? null : (
             <Popup>
               <MapEventPopup
                 event={event}

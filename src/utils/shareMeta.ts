@@ -1,5 +1,6 @@
 const SITE_NAME = 'Plannr'
-const FALLBACK_TITLE = 'Shared plan'
+const SITE_TAGLINE = 'Plannr: Lightweight itinerary planner'
+const FALLBACK_TITLE = 'plan'
 
 function setMeta(attr: 'property' | 'name', key: string, content: string) {
   const selector = `meta[${attr}="${key}"]`
@@ -13,11 +14,14 @@ function setMeta(attr: 'property' | 'name', key: string, content: string) {
 }
 
 export function applyShareMeta(title?: string, description?: string) {
+  const isPlan = title !== undefined
   const planTitle = title?.trim() || FALLBACK_TITLE
-  document.title = title?.trim() ? `${planTitle} · ${SITE_NAME}` : SITE_NAME
-  setMeta('property', 'og:title', planTitle)
+  const previewTitle = isPlan ? `View ${planTitle}` : SITE_TAGLINE
+
+  document.title = title?.trim() ? `${planTitle} · ${SITE_NAME}` : previewTitle
+  setMeta('property', 'og:title', previewTitle)
   setMeta('property', 'og:url', `${window.location.origin}${window.location.pathname}`)
-  setMeta('name', 'twitter:title', planTitle)
+  setMeta('name', 'twitter:title', previewTitle)
 
   if (description?.trim()) {
     setMeta('property', 'og:description', description.trim())

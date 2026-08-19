@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link2, Pencil } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
@@ -6,6 +6,7 @@ import { useCalendarExport } from '../CalendarExport'
 import ItineraryMap from '../ItineraryMap'
 import PreviewModeControl from '../PreviewModeControl'
 import PreviewTimeline from '../PreviewTimeline'
+import SaveMemoryButton, { type SaveMemoryHandle } from '../SaveMemoryButton'
 import SplitLayout from '../SplitLayout'
 import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { effectivePreviewMode, usePreviewMode } from '../../hooks/usePreviewMode'
@@ -19,6 +20,7 @@ export default function PreviewScreen() {
   const isDesktop = useDesktopLayout()
   const [previewMode, setPreviewMode] = usePreviewMode()
   const [focusedEventId, setFocusedEventId] = useState<string | null>(null)
+  const saveMemoryRef = useRef<SaveMemoryHandle>(null)
   const [notice, setNotice] = useState(
     hasCalendarDate(itinerary.date) || isEmptyState(itinerary)
       ? ''
@@ -93,6 +95,13 @@ export default function PreviewScreen() {
             onChange={setPreviewMode}
             onAddDay={addDay}
             onAddEachEvent={addEachEvent}
+            onSaveImage={() => saveMemoryRef.current?.open()}
+          />
+          <SaveMemoryButton
+            ref={saveMemoryRef}
+            itinerary={itinerary}
+            onNotice={setNotice}
+            size="sm"
           />
           <Button
             label="Copy"

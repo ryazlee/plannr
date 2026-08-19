@@ -11,6 +11,7 @@ import TimelinePanel from '../TimelinePanel'
 import { useDesktopLayout } from '../../hooks/useMediaQuery'
 import { useItinerary } from '../../hooks/useItinerary'
 import { formatDisplayDate } from '../../utils/itinerary'
+import { pickSearchProximity } from '../../utils/geocode'
 import { applyShareMeta } from '../../utils/shareMeta'
 import { createViewLocation } from '../../utils/urlState'
 import type { LatLng } from '../../types'
@@ -28,6 +29,7 @@ export default function PlannerScreen() {
     pendingLocation,
     focusedEventId,
     notice,
+    setNotice,
     setDraftStartTime,
     setDraftEndTime,
     setDraftTitle,
@@ -71,6 +73,11 @@ export default function PlannerScreen() {
               <SectionCard className="map-card" noPadding>
                 <div className="map-canvas">
                   <MapSearch
+                    proximity={pickSearchProximity(
+                      itinerary.events,
+                      pendingLocation,
+                      focusedEventId,
+                    )}
                     onSelect={(place) => {
                       const location = { lat: place.lat, lng: place.lng }
                       setSearchTarget(location)
@@ -97,11 +104,13 @@ export default function PlannerScreen() {
                   date={itinerary.date}
                   notice={notice}
                   eventCount={itinerary.events.length}
+                  itinerary={itinerary}
                   viewLocation={createViewLocation(itinerary)}
                   onTitleChange={updateTitle}
                   onDateChange={updateDate}
                   onCopyShareLink={copyShareLink}
                   onClearPlan={clearPlan}
+                  onNotice={setNotice}
                 />
 
                 <PeoplePanel

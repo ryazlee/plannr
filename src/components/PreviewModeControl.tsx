@@ -15,6 +15,7 @@ type PreviewModeControlProps = {
   onChange: (mode: PreviewMode) => void
   onAddDay: () => void
   onAddEachEvent: () => void
+  onSaveImage: () => void
 }
 
 export default function PreviewModeControl({
@@ -23,6 +24,7 @@ export default function PreviewModeControl({
   onChange,
   onAddDay,
   onAddEachEvent,
+  onSaveImage,
 }: PreviewModeControlProps) {
   const modes = isDesktop ? ALL_MODES : ALL_MODES.filter((option) => option.id !== 'split')
   const [open, setOpen] = useState(false)
@@ -136,6 +138,20 @@ export default function PreviewModeControl({
 
           <div className="preview-menu__sep" role="separator" />
 
+          <button
+            type="button"
+            role="menuitem"
+            className="preview-menu__item"
+            onClick={() => {
+              setOpen(false)
+              onSaveImage()
+            }}
+          >
+            <span className="preview-menu__leading">
+              <Download size={16} aria-hidden="true" />
+            </span>
+            Download image
+          </button>
           <button
             type="button"
             role="menuitem"

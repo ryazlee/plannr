@@ -17,6 +17,7 @@ type EventDetailsProps = {
   index: number
   showHeading?: boolean
   allPeople?: string[]
+  staticMode?: boolean
 }
 
 function MetaLine({ parts }: { parts: ReactNode[] }) {
@@ -91,6 +92,7 @@ export default function EventDetails({
   index,
   showHeading = true,
   allPeople = [],
+  staticMode = false,
 }: EventDetailsProps) {
   const windowLabel = formatEventWindow(event)
   const durationLabel = formatEventDuration(event)
@@ -108,9 +110,9 @@ export default function EventDetails({
     summary.push(peopleLabel)
   }
 
-  const eventLink = href ? <EventLink value={event.link} /> : null
-  const placeText = placeLabel || (located ? 'Directions' : '')
-  const placeHref = located ? mapsHref(event.lat, event.lng) : null
+  const eventLink = href && !staticMode ? <EventLink value={event.link} /> : null
+  const placeText = placeLabel || (located && !staticMode ? 'Directions' : '')
+  const placeHref = located && !staticMode ? mapsHref(event.lat, event.lng) : null
 
   if (!showHeading && !notes && !placeText && summary.length === 0 && !eventLink) {
     return null
@@ -143,7 +145,7 @@ export default function EventDetails({
           </a>
         ) : (
           <p className="event-details__place">
-            <MapPin size={14} aria-hidden="true" />
+            {staticMode ? null : <MapPin size={14} aria-hidden="true" />}
             <span>{placeText}</span>
           </p>
         )

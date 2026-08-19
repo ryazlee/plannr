@@ -1,17 +1,19 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { Search, X } from 'lucide-react'
-import { searchPlaces, type PlaceResult } from '../utils/geocode'
+import { searchPlaces, type PlaceResult, type SearchProximity } from '../utils/geocode'
 
 type MapSearchProps = {
   onSelect: (place: PlaceResult) => void
   variant?: 'overlay' | 'inline'
   placeholder?: string
+  proximity?: SearchProximity | null
 }
 
 export default function MapSearch({
   onSelect,
   variant = 'overlay',
   placeholder = 'Search a place',
+  proximity = null,
 }: MapSearchProps) {
   const listId = useId()
   const inputId = useId()
@@ -26,11 +28,11 @@ export default function MapSearch({
 
   useEffect(() => {
     const trimmed = query.trim()
-    if (trimmed.length < 3) {
+    if (trimmed.length < 2) {
       abortRef.current?.abort()
       setResults([])
       setLoading(false)
-      setStatus(trimmed.length === 0 ? '' : 'Type at least 3 characters')
+      setStatus(trimmed.length === 0 ? '' : 'Type at least 2 characters')
       setActiveIndex(0)
       return
     }
@@ -43,7 +45,7 @@ export default function MapSearch({
       setStatus('Searching…')
 
       try {
-        const places = await searchPlaces(trimmed, controller.signal)
+        const places = await searchPlaces(trimmed, controller.signal, proximity)
         setResults(places)
         setOpen(true)
         setActiveIndex(0)
@@ -57,12 +59,12 @@ export default function MapSearch({
       } finally {
         setLoading(false)
       }
-    }, 450)
+    }, 280)
 
     return () => {
       window.clearTimeout(timer)
     }
-  }, [query])
+  }, [query, proximity?.lat, proximity?.lng])
 
   useEffect(() => {
     return () => abortRef.current?.abort()

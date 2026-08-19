@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
 import AppHeader from '../AppHeader'
 import Button from '../Button'
+import MakerCredit from '../MakerCredit'
 import { formatDisplayDate, formatTimeRange } from '../../utils/itinerary'
 import { applyShareMeta } from '../../utils/shareMeta'
 import { hasUrlPlanPayload, createNewPlanLocation, createEditorLocation } from '../../utils/urlState'
@@ -108,6 +109,9 @@ export default function HomeScreen() {
           </div>
         </div>
       </main>
+      <footer className="app-footer">
+        <MakerCredit />
+      </footer>
     </div>
   )
 }

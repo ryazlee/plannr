@@ -2,6 +2,7 @@ import { useState } from 'react'
 import ItineraryMap from './ItineraryMap'
 import MapSearch from './MapSearch'
 import type { Event, LatLng } from '../types'
+import { pickSearchProximity } from '../utils/geocode'
 
 type EventMiniMapProps = {
   events: Event[]
@@ -39,6 +40,7 @@ export default function EventMiniMap({
       {showSearch ? (
         <MapSearch
           variant="inline"
+          proximity={pickSearchProximity(events, pendingLocation, focusedEventId)}
           onSelect={(place) => {
             const location = { lat: place.lat, lng: place.lng }
             setSearchTarget(location)

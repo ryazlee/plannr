@@ -16,6 +16,7 @@ type PreviewTimelineProps = {
   people: string[]
   focusedEventId: string | null
   onSelectEvent: (eventId: string) => void
+  staticMode?: boolean
 }
 
 export default function PreviewTimeline({
@@ -23,6 +24,7 @@ export default function PreviewTimeline({
   people,
   focusedEventId,
   onSelectEvent,
+  staticMode = false,
 }: PreviewTimelineProps) {
   const groups = useMemo(() => {
     const clustered = groupEventsByStartTime(events)
@@ -50,6 +52,7 @@ export default function PreviewTimeline({
           people={people}
           focusedEventId={focusedEventId}
           onSelectEvent={onSelectEvent}
+          staticMode={staticMode}
         />
       ))}
     </ol>
@@ -64,6 +67,7 @@ function PreviewCluster({
   people,
   focusedEventId,
   onSelectEvent,
+  staticMode,
 }: {
   group: Event[]
   startIndex: number
@@ -72,6 +76,7 @@ function PreviewCluster({
   people: string[]
   focusedEventId: string | null
   onSelectEvent: (eventId: string) => void
+  staticMode: boolean
 }) {
   const lead = group[0]
   const previousEnd = previous ? latestEffectiveEnd(previous) : ''
@@ -116,6 +121,7 @@ function PreviewCluster({
                   selected={event.id === focusedEventId}
                   lane
                   onSelectEvent={onSelectEvent}
+                  staticMode={staticMode}
                 />
               ))}
             </div>
@@ -129,6 +135,7 @@ function PreviewCluster({
               people={people}
               selected={event.id === focusedEventId}
               onSelectEvent={onSelectEvent}
+              staticMode={staticMode}
             />
           ))
         )}
@@ -144,6 +151,7 @@ function PreviewEventBlock({
   selected,
   lane = false,
   onSelectEvent,
+  staticMode = false,
 }: {
   event: Event
   index: number
@@ -151,51 +159,65 @@ function PreviewEventBlock({
   selected: boolean
   lane?: boolean
   onSelectEvent: (eventId: string) => void
+  staticMode?: boolean
 }) {
   const blockRef = useRef<HTMLDivElement>(null)
   const startLabel = formatTime(event.startTime)
   const title = event.title || `Event ${index}`
 
   useEffect(() => {
-    if (!selected) {
+    if (!selected || staticMode) {
       return
     }
     blockRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  }, [selected])
+  }, [selected, staticMode])
 
   return (
     <div
       ref={blockRef}
       className={[
         'preview-event-block',
+        'preview-event',
         selected ? 'preview-event-block--active' : null,
+        selected ? 'preview-event--active' : null,
         lane ? 'preview-event-block--lane' : null,
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <button
-        type="button"
-        className={['preview-event', selected ? 'preview-event--active' : null]
-          .filter(Boolean)
-          .join(' ')}
-        aria-pressed={selected}
-        aria-label={lane && startLabel ? `${title}, ${startLabel}` : undefined}
-        onClick={() => onSelectEvent(event.id)}
-      >
-        {lane ? null : <span className="preview-event__when">{startLabel || '—'}</span>}
-        <span className="preview-event__node" aria-hidden="true" />
-        <span className="preview-event__title">{title}</span>
-      </button>
-      <div
-        className="preview-event__details"
-        onClick={() => {
-          if (!selected) {
+      {lane ? null : <span className="preview-event__when">{startLabel || '—'}</span>}
+      <span className="preview-event__node" aria-hidden="true" />
+      <div className="preview-event__main">
+        {staticMode ? (
+          <span className="preview-event__title">{title}</span>
+        ) : (
+          <button
+            type="button"
+            className="preview-event__title-btn"
+            aria-pressed={selected}
+            aria-label={lane && startLabel ? `${title}, ${startLabel}` : undefined}
+            onClick={() => onSelectEvent(event.id)}
+          >
+            <span className="preview-event__title">{title}</span>
+          </button>
+        )}
+        <div
+          className="preview-event__details"
+          onClick={() => {
+            if (staticMode || selected) {
+              return
+            }
             onSelectEvent(event.id)
-          }
-        }}
-      >
-        <EventDetails event={event} index={index} showHeading={false} allPeople={people} />
+          }}
+        >
+          <EventDetails
+            event={event}
+            index={index}
+            showHeading={false}
+            allPeople={people}
+            staticMode={staticMode}
+          />
+        </div>
       </div>
     </div>
   )
